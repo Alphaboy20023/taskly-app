@@ -1,12 +1,19 @@
 import TaskCard from "./components/TaskCard"
 import Calendar from "./components/Calendar"
 import SchedulePage from "./components/Schedule"
+import UserProfile from "./components/UserProfile"
+import MusicCard from "./components/Music"
+import { FaLongArrowAltRight } from "react-icons/fa";
+
 
 const Home = () => {
   return (
     <>
       <div className="flex lg:flex-nowrap flex-wrap">
-        <div className="flex flex-col p-6 bg-[#F6F7FB] w-1/3">
+        <div className="lg:hidden shadow shadow-lg w-full">
+          <UserProfile />
+        </div>
+        <div className="flex flex-col p-6 bg-[#F6F7FB] lg:w-1/2 w-full">
           <div className="flex space-x-3">
             <img src="/Img/Logo.jpg" alt="" className="bg-transparent" />
             <p className=" font-semibold text-xl">taskly</p>
@@ -21,8 +28,25 @@ const Home = () => {
         <div className="w-full">
           <SchedulePage />
         </div>
-        <div>
-          lastpage
+        <div className="lg:w-1/2 w-full space-y-10 p-3">
+          <div className=" hidden lg:block">
+            <UserProfile />
+          </div>
+          <MusicCard />
+          <div className="rounded-lg p-6 shadow shadow-lg bg-gray-100 space-y-3">
+            <p className="text-3xl">
+              unleash the freelance super power
+            </p>
+            <p className="text-gray-700 font-medium text-md">
+              Unlimited task, premium features and much more.
+              <div className="flex justify-between items-center">
+                <img src="/img/bust.jpg" alt="" className="object-cover mix-blend-multiply" />
+                <p className="text-2xl font-semibold bg-[#F8D57E] p-3 rounded-md">
+                  <FaLongArrowAltRight className="text-black"/>
+                </p>
+              </div>
+            </p>
+          </div>
         </div>
       </div>
     </>
