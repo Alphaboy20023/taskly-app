@@ -1,0 +1,69 @@
+"use client";
+import { useState } from "react";
+import toast from "react-hot-toast";
+
+type DeleteProps = {
+  taskId: string;
+  setTasks: React.Dispatch<React.SetStateAction<any[]>>;
+};
+
+const Delete = ({ taskId, setTasks }: DeleteProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleDeleteTask = async () => {
+    try {
+      const res = await fetch(`/api/task?id=${taskId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Failed to delete task.");
+        return;
+      }
+
+      toast.success("Task deleted");
+      setTasks(prev => prev.filter(task => task._id !== taskId));
+      setIsOpen(false); // close modal
+    } catch (error) {
+      toast.error("Something went wrong.");
+    }
+  };
+
+  return (
+    <>
+      <button
+        className="text-red-600 hover:underline text-sm"
+        onClick={() => setIsOpen(true)}
+      >
+        Delete
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm">
+            <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
+            <p className="text-gray-600 mb-6">Are you sure you want to delete this task?</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteTask}
+                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default Delete;

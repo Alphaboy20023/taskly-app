@@ -2,10 +2,10 @@
 export const musicData = [
   {
     id: 1,
-    title: "Sweet Jam",
-    artist: "Naija Star",
+    title: "10 Kilo",
+    artist: "Davido",
     cover: "/music/covers/sweet-jam.jpg",
-    audio: "/music/audio/sweet-jam.mp3",
+    audio: "/Music/10 kilo by davido.mp3",
   },
   {
     id: 2,

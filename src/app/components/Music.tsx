@@ -81,11 +81,11 @@ const MusicCard = () => {
   }, [currentTrackIndex]);
 
   return (
-    <div className="p-4 bg-white rounded-xl shadow-lg max-w-sm w-full">
+    <div className="p-4 bg-gray-100 rounded-xl shadow-lg max-w-sm w-full ">
       <img
         src={currentTrack?.cover || "/Img/placeholder.jpg"}
         alt="Cover"
-        className="w-full h-24 object-cover rounded-lg"
+        className="w-full h-18 object-cover rounded-lg"
       />
       <p className="mt-3 text-lg font-semibold truncate">{currentTrack?.title}</p>
       <p className="text-gray-500 truncate">{currentTrack?.artist}</p>
@@ -116,7 +116,7 @@ const MusicCard = () => {
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-between mt-4 text-xl text-gray-500">
+      <div className="flex items-center justify-between mt-3 text-xl text-gray-500 ">
         <FaRandom
           onClick={toggleShuffle}
           className={`cursor-pointer ${shuffle ? "text-orange-500" : ""} hover:text-orange-400`}
@@ -140,9 +140,6 @@ const MusicCard = () => {
           className={`cursor-pointer ${repeat ? "text-orange-500" : "text-gray-500"} hover:text-orange-500`}
         />
       </div>
-
-      <div className="p-4 grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-    </div>
     </div>
 
     

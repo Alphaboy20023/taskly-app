@@ -1,9 +1,12 @@
+'use client'
+import UserProfile from "./components/UserProfile"
 import TaskCard from "./components/TaskCard"
 import Calendar from "./components/Calendar"
 import SchedulePage from "./components/Schedule"
-import UserProfile from "./components/UserProfile"
 import MusicCard from "./components/Music"
 import { FaLongArrowAltRight } from "react-icons/fa";
+// import Link from "next/link"
+import Weather from "./components/Weather"
 
 
 const Home = () => {
@@ -19,10 +22,10 @@ const Home = () => {
             <p className=" font-semibold text-xl">taskly</p>
           </div>
           <div className="flex justify-between">
-            <h2 className="py-12 text-xl">Weekly Pinned</h2>
+            <h2 className="py-8 text-xl">Weekly Pinned</h2>
             <button className="text-orange-400 font-semibold">View all</button>
           </div>
-          <TaskCard />
+          <TaskCard  />
           <Calendar />
         </div>
         <div className="w-full">
@@ -32,20 +35,21 @@ const Home = () => {
           <div className=" hidden lg:block">
             <UserProfile />
           </div>
+          <Weather />
           <MusicCard />
           <div className="rounded-lg p-6 shadow shadow-lg bg-gray-100 space-y-3">
             <p className="text-3xl">
               unleash the freelance super power
             </p>
-            <p className="text-gray-700 font-medium text-md">
-              Unlimited task, premium features and much more.
+            <div className="text-gray-700 font-medium text-md">
+              <p>Unlimited task, premium features and much more.</p>
               <div className="flex justify-between items-center">
                 <img src="/img/bust.jpg" alt="" className="object-cover mix-blend-multiply" />
                 <p className="text-2xl font-semibold bg-[#F8D57E] p-3 rounded-md">
                   <FaLongArrowAltRight className="text-black"/>
                 </p>
               </div>
-            </p>
+            </div>
           </div>
         </div>
       </div>
