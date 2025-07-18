@@ -88,7 +88,7 @@ const SettingsModal = ({ onClose, handleLogout }: SettingsModalProps) => {
             Hello, {user?.username || user?.name || user?.email || 'Welcome'}
           </p>
 
-          <p className="font-medium text-xl">Change password</p>
+          {/* <p className="font-medium text-xl">Change password</p> */}
 
           <div className="block">
             {user ? (
