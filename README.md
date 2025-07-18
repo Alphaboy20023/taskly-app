@@ -16,6 +16,7 @@ A task scheduling app built with Next.js for managing personal and important tas
 - TypeScript
 - MongoDB with Mongoose
 - Tailwind CSS
+- Google Authentication, Firebase
 
 
 ## Getting Started

@@ -153,12 +153,12 @@ const TaskCard = () => {
         </div>
       ))}
 
-      {/* Add Task Trigger */}
+     
       <div
         onClick={handleOpenModal}
-        className="p-4 bg-white rounded-xl font-medium flex w-[70%] lg:w-[30vh] justify-between items-center mt-5 shadow-lg cursor-pointer"
+        className="p-4 bg-white rounded-xl font-medium flex lg:w-[30vh] justify-between items-center mt-5 shadow-lg cursor-pointer"
       >
-        <p>Add New Task</p>
+        <p className='text-black'>Add New Task</p>
         <p className="px-4 text-white text-xl font-medium bg-orange-400 rounded-lg">+</p>
       </div>
 

@@ -53,22 +53,22 @@ const Weather = () => {
 
     return (
         <div className=" font-medium flex justify-center">
-            <div className="flex items-center gap-4 bg-gray-100 p-6 rounded-lg">
+            <div className="flex items-center gap-4 bg-gray-100 justify-between p-6 rounded-lg w-full">
                 <div>
                     {iconUrl && (
                         <Image
                             src={iconUrl}
                             alt="weather icon"
-                            className="w-12 h-12 object-contain"
-                            width={100}
-                            height={100}
+                            className=" object-contain"
+                            width={10}
+                            height={10}
                         />
                     )}
                     {temp && <p className="text-2xl text-gray-800">{temp}</p>}
                 </div>
                 <div className="flex flex-col ">
-                    <p className="text-4xl">{time}</p>
-                    <p className="text-md capitalize">{condition}</p>
+                    <p className="text-4xl text-black">{time}</p>
+                    <p className="text-md capitalize text-black">{condition}</p>
                 </div>
             </div>
         </div>

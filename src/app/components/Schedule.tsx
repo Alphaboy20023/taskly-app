@@ -71,7 +71,7 @@ const SchedulePage = () => {
     
 
     return (
-        <div className="p-4 w-full">
+        <div className="p-4 w-full bg-white">
             <div className="flex justify-between items-center mb-4">
                 <div>
                     <h1 className="text-2xl font-medium p-2">Schedule</h1>

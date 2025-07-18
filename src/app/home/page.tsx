@@ -26,10 +26,10 @@ const Home = () => {
               width={40}
               height={40}
             />
-            <p className=" font-semibold text-xl">taskly</p>
+            <p className=" font-semibold text-xl text-black">taskly</p>
           </div>
           <div className="flex justify-between">
-            <h2 className="py-8 text-xl">Weekly Pinned</h2>
+            <h2 className="py-8 text-xl text-black">Weekly Pinned</h2>
             <button className="text-orange-400 font-semibold">View all</button>
           </div>
           <TaskCard />
@@ -38,7 +38,7 @@ const Home = () => {
         <div className="w-full">
           <SchedulePage />
         </div>
-        <div className="lg:w-1/2 w-full space-y-10 p-3">
+        <div className="lg:w-1/2 w-full space-y-10 p-3 bg-white">
           <div className=" hidden lg:block">
             <UserProfile />
           </div>

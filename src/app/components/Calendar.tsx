@@ -32,15 +32,13 @@ const Calendar = ({ value, onChange }: CalendarProps) => {
   const renderHeader = () => (
     <div className="flex justify-between items-center px-2 py-4 bg-transparent pt-8">
       <div>
-        <h2 className="text-lg font-semibold">{format(currentMonth, "MMMM yyyy")}</h2>
+        <h2 className="text-lg font-semibold text-black">{format(currentMonth, "MMMM yyyy")}</h2>
       </div>
       <div className="flex gap-5">
         <button onClick={prevMonth} className="text-2xl font-bold"><FaChevronCircleLeft /></button>
         <button onClick={nextMonth} className="text-2xl font-bold"><FaChevronCircleRight /></button>
       </div>
-      <div className="text-orange-600 text-sm font-semibold">
-        <p>No events</p>
-      </div>
+     
     </div>
   );
 
