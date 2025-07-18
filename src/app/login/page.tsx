@@ -27,7 +27,7 @@ const Login = () => {
         setLoading(false);
 
         try {
-            const result = unwrapResult(resultAction);
+            unwrapResult(resultAction);
             toast.success("Login successful!");
             router.push('/');
         } catch (err) {
