@@ -2,19 +2,17 @@
 import UserProfile from "../components/UserProfile"
 import TaskCard from "../components/TaskCard"
 import Calendar from "../components/Calendar"
-import SchedulePage, { Task } from "../components/Schedule"
+import SchedulePage from "../components/Schedule"
 import MusicCard from "../components/Music"
 import { FaLongArrowAltRight } from "react-icons/fa";
 import Weather from "../components/Weather"
-import { useState} from "react"
+import { useState } from "react"
+import Image from "next/image"
 
 
 const Home = () => {
 
   const [newScheduledAt, setNewScheduledAt] = useState<Date | null>(new Date());
-
-
-
 
   return (
     <>
@@ -24,7 +22,10 @@ const Home = () => {
         </div>
         <div className="flex flex-col p-6 bg-[#F6F7FB] lg:w-1/2 w-full">
           <div className="flex space-x-3">
-            <img src="/Img/Logo.jpg" alt="" className="bg-transparent" />
+            <Image src="/Img/Logo.jpg" alt="" className="bg-transparent"
+              width={40}
+              height={40}
+            />
             <p className=" font-semibold text-xl">taskly</p>
           </div>
           <div className="flex justify-between">
@@ -50,7 +51,10 @@ const Home = () => {
             <div className="text-gray-700 font-medium text-md">
               <p>Unlimited task, premium features and much more.</p>
               <div className="flex justify-between items-center">
-                <img src="/img/bust.jpg" alt="" className="object-cover mix-blend-multiply" />
+                <Image src="/img/bust.jpg" alt="" className="object-cover mix-blend-multiply"
+                  width={100}
+                  height={100}
+                />
                 <p className="text-2xl font-semibold bg-[#F8D57E] p-3 rounded-md">
                   <FaLongArrowAltRight className="text-black" />
                 </p>

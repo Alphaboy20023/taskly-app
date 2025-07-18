@@ -2,9 +2,16 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 
+type Task = {
+  _id: string;
+  title: string;
+  description: string;
+  scheduledAt: string;
+};
+
 type DeleteProps = {
   taskId: string;
-  setTasks: React.Dispatch<React.SetStateAction<any[]>>;
+  setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
 };
 
 const Delete = ({ taskId, setTasks }: DeleteProps) => {
@@ -14,9 +21,7 @@ const Delete = ({ taskId, setTasks }: DeleteProps) => {
     try {
       const res = await fetch(`/api/task?id=${taskId}`, {
         method: "DELETE",
-        
       });
-      window.dispatchEvent(new Event("tasks-updated"));
 
       const data = await res.json();
 
@@ -27,9 +32,14 @@ const Delete = ({ taskId, setTasks }: DeleteProps) => {
 
       toast.success("Task deleted");
       setTasks(prev => prev.filter(task => task._id !== taskId));
-      setIsOpen(false); // close modal
-    } catch (error) {
-      toast.error("Something went wrong.");
+      setIsOpen(false);
+      window.dispatchEvent(new Event("tasks-updated"));
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Something went wrong.");
+      }
     }
   };
 

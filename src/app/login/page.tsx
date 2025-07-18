@@ -3,12 +3,11 @@ import Link from "next/link";
 import { toast } from "react-toastify";
 import { loginUser } from "app/redux/authSlice";
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 const Login = () => {
     const [email, setEmail] = useState('');
-    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const dispatch = useDispatch();
     const router = useRouter();
@@ -66,7 +65,7 @@ const Login = () => {
                         Login
                     </button>
                     <div className="flex gap-3 flex-wrap font-medium text-xl items-center">
-                        <p>Don't have an Account?</p>
+                        <p>Don&apos;t have an Account?</p>
                         <Link href="/register" className="hover:text-white hover:bg-blue-400 bg-white border border-blue-400 text-blue-400 px-3 p-1 rounded-md">Register</Link>
                     </div>
                 </div>

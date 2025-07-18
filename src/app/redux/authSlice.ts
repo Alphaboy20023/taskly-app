@@ -4,8 +4,15 @@ import { auth, googleProvider } from '../lib/firebase'
 import { signInWithPopup } from "firebase/auth";
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 
+
+export interface User {
+  username?: string;
+  displayName?: string;
+  name?: string;
+  email: string;
+}
 interface AuthState {
-  user: null | { email: string; name: string }
+  user: User | null;
   loading: boolean
   error: null | string
 }

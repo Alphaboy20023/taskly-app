@@ -9,7 +9,7 @@ const TaskCardCalendar = ({
   value: Date | null;
   onChange: (date: Date) => void;
 }) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth ] = useState(new Date());
 
   const start = startOfMonth(currentMonth);
   const end = endOfMonth(currentMonth);

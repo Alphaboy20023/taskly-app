@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import Delete from "./DeleteTask";
 import TaskCardCalendar from "./TaskCardCalendar";
+import Image from "next/image";
 
 const TaskCard = () => {
   const [showModal, setShowModal] = useState(false);
@@ -11,7 +12,6 @@ const TaskCard = () => {
   const [newDescription, setNewDescription] = useState("");
   const [newScheduledAt, setNewScheduledAt] = useState<string>("");
   const [showCalendar, setShowCalendar] = useState(false)
-  const calendarRef = useRef<HTMLDivElement>(null)
 
   const [tasks, setTasks] = useState<
     { _id: string; title: string; description: string; scheduledAt: string }[]
@@ -23,7 +23,7 @@ const TaskCard = () => {
     const scheduledTime = new Date(newScheduledAt);
     const now = new Date();
 
-      window.dispatchEvent(new Event("tasks-updated"));
+    window.dispatchEvent(new Event("tasks-updated"));
 
     if (scheduledTime < now) {
       toast.error("Event cannot be created in the past.");
@@ -74,10 +74,12 @@ const TaskCard = () => {
           className="flex justify-between items-start gap-4 p-4 rounded-lg shadow-md bg-white border border-gray-200 mb-4"
         >
           <div className="w-12 h-12 rounded-full overflow-hidden">
-            <img
+            <Image
               src="https://source.unsplash.com/80x80/?task,productivity"
               alt="Task"
               className="w-full h-full object-cover"
+              width={100}
+              height={100}
             />
           </div>
 

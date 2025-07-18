@@ -18,12 +18,11 @@ export async function GET() {
   return NextResponse.json(tasks);
 }
 
-// POST new task
+// POST task
 export async function POST(req: NextRequest) {
-  // console.log("✅ POST endpoint hit");
+  
   await connectDB();
   const { title, description, scheduledAt } = await req.json();
-  // console.log("Incoming data:", { title, description, scheduledAt });
 
   if (!title || !scheduledAt) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -33,7 +32,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(newTask, { status: 201 });
 }
 
-// DELETE a task
+// Delete Task
 export async function DELETE(req: Request) {
   try {
     await connectDB();

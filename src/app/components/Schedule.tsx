@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import TaskDetailModal from "./TaskDetailModal";
+import Image from "next/image";
+import { toast } from "react-toastify";
 
 export type Task = {
     _id: string;
@@ -12,29 +14,33 @@ export type Task = {
 const SchedulePage = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
 
     const today = new Date();
     today.setHours(0, 0, 0, 0); // ensure comparison is by day only
 
-    const fetchTasks = async () => {
-        try {
-            const res = await fetch("/api/task");
-            const data = await res.json();
-            const filtered = data.filter((task: Task) => {
-                const taskDate = new Date(task.scheduledAt);
-                taskDate.setHours(0, 0, 0, 0);
-                return taskDate >= today; // Only today or future
-            });
-            setTasks(filtered);
-        } catch (error) {
-            console.error("Error fetching tasks:", error);
-        }
-    };
-
     useEffect(() => {
-        fetchTasks();
-        const handleUpdate = () => fetchTasks();
+        const fetchTasks = async () => {
+            try {
+                const res = await fetch("/api/task");
+                const data = await res.json();
+                const filtered = data.filter((task: Task) => {
+                    const taskDate = new Date(task.scheduledAt);
+                    taskDate.setHours(0, 0, 0, 0);
+                    return taskDate >= today;
+                });
+                setTasks(filtered);
+                setErrorMessage(null);
+            } catch (error) {
+                console.error("Error fetching tasks:", error);
+                setErrorMessage('An unexpected error occured');
+            }
+        };
 
+        fetchTasks();
+
+        const handleUpdate = () => fetchTasks();
         window.addEventListener("tasks-updated", handleUpdate);
         return () => window.removeEventListener("tasks-updated", handleUpdate);
     }, []);
@@ -52,6 +58,10 @@ const SchedulePage = () => {
         return date > today;
     });
 
+    if (errorMessage) {
+        toast.error(errorMessage)
+    }
+
     return (
         <div className="p-4 w-full">
             <div className="flex justify-between items-center mb-4">
@@ -66,13 +76,16 @@ const SchedulePage = () => {
                         })}
                     </p>
                 </div>
-                <img src="/Img/Logo.jpg" alt="logo" className="w-10 h-10" />
+                <Image src="/Img/Logo.jpg" alt="logo" className="w-10 h-10"
+                    width={400}
+                    height={200}
+                />
             </div>
 
             {/* Today's Schedule */}
             {todayTasks.length > 0 && (
                 <>
-                    <h2 className="text-xl font-semibold mb-2 px-2">Today's Schedule</h2>
+                    <h2 className="text-xl font-semibold mb-2 px-2">Today&apos;s Schedule</h2>
                     <div className="flex flex-col gap-4 mb-6">
                         {todayTasks.map((task) => (
                             <div
@@ -81,7 +94,10 @@ const SchedulePage = () => {
                                 className="cursor-pointer flex text-xl rounded-2xl shadow-lg font-medium justify-between items-center bg-[#F8D57E] px-6 p-4 gap-4"
                             >
                                 <div className="flex gap-4 items-center">
-                                    <img src="/Img/Logo.jpg" alt="" className="w-10 h-10" />
+                                    <Image src="/Img/Logo.jpg" alt="" className="w-10 h-10"
+                                        width={400}
+                                        height={200}
+                                    />
                                     <div>
                                         <p>{task.title}</p>
                                         <p className="text-gray-600 text-sm">{task.description}</p>
@@ -112,7 +128,10 @@ const SchedulePage = () => {
                                 className="cursor-pointer flex text-xl rounded-2xl shadow-lg font-medium justify-between items-center bg-[#F6F7FB] px-6 p-4 gap-4"
                             >
                                 <div className="flex gap-4 items-center">
-                                    <img src="/Img/Logo.jpg" alt="" className="w-10 h-10" />
+                                    <Image src="/Img/Logo.jpg" alt="" className="w-10 h-10"
+                                        width={400}
+                                        height={200}
+                                    />
                                     <div>
                                         <p>{task.title}</p>
                                         <p className="text-gray-600 text-sm">{task.description}</p>
@@ -139,7 +158,7 @@ const SchedulePage = () => {
 
             {todayTasks.length === 0 && upcomingTasks.length === 0 && (
                 <div className="text-center text-gray-600 mt-10 text-lg">
-                    <p>You haven't scheduled a task Yet</p>
+                    <p>You haven&apos;t scheduled a task Yet</p>
                 </div>
             )}
 

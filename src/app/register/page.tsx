@@ -7,8 +7,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation'
 import { toast } from "react-toastify";
 import Link from "next/link";
-
-
+import type { RootState } from '../redux/store';
 
 
 const SignUp = () => {
@@ -17,11 +16,11 @@ const SignUp = () => {
     const [password, setPassword] = useState('');
     const router = useRouter();
     const [signUpType, setSignUpType] = useState<'google' | 'normal' | null>(null);
-    const [errorMessage, setErrorMessage] = useState();
+
 
 
     const dispatch = useDispatch()
-    const { loading, error, user } = useSelector((state: any) => state.auth)
+    const {  user } = useSelector((state: RootState) => state.auth)
 
 
     const handleRegisterUser = async () => {
@@ -35,9 +34,7 @@ const SignUp = () => {
         const resultAction = await dispatch(registerUser({ username, email, password }) as any);
 
         if (registerUser.rejected.match(resultAction)) {
-            // @ts-ignore
-            setErrorMessage(resultAction.payload as string);
-            toast.error(resultAction.payload as string); // show backend message
+            toast.error(resultAction.payload as string); // backend message
         }
     };
 

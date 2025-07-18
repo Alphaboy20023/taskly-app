@@ -5,9 +5,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { FaUserCircle } from "react-icons/fa";
 import { logout } from '../redux/authSlice';
 import { useRouter } from 'next/navigation';
+import type { RootState } from '../redux/store'
 
 const UserProfile = () => {
-  const { user } = useSelector((state: any) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const router = useRouter();
 
@@ -47,7 +48,7 @@ type SettingsModalProps = {
 };
 
 const SettingsModal = ({ onClose, handleLogout }: SettingsModalProps) => {
-  const { user } = useSelector((state: any) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">

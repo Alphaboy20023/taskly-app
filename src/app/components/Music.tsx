@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 import { BsRepeat } from "react-icons/bs";
 import { musicData } from "app/Music/MusicData";
+import Image from "next/image";
 
 
 type Track = typeof musicData[number];
@@ -76,16 +77,18 @@ const MusicCard = () => {
 
   useEffect(() => {
     if (audioRef.current && isPlaying) {
-      audioRef.current.play().catch(() => {});
+      audioRef.current.play().catch(() => { });
     }
-  }, [currentTrackIndex]);
+  }, [currentTrackIndex, isPlaying]);
 
   return (
     <div className="p-4 bg-gray-100 rounded-xl shadow-lg max-w-sm w-full ">
-      <img
-        src="../Img/10-kilo.jpg"
+      <Image
+        src="/Img/10-kilo.jpeg"
         alt="Cover"
-        className="w-full h-18 object-cover rounded-lg"
+        className="w-full h-40 object-cover rounded-lg"
+        width={400}
+        height={200}
       />
       <p className="mt-3 text-lg font-semibold truncate">{currentTrack?.title}</p>
       <p className="text-gray-500 truncate">{currentTrack?.artist}</p>
@@ -96,7 +99,9 @@ const MusicCard = () => {
         preload="auto"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleTimeUpdate}
-        onEnded={() => !repeat && nextTrack()}
+        onEnded={() => {
+          if (!repeat) nextTrack();
+        }}
       />
 
       {/* Waveform-style bar */}
@@ -142,7 +147,7 @@ const MusicCard = () => {
       </div>
     </div>
 
-    
+
   );
 };
 
