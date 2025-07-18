@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 'use client';
 import { useEffect, useState, useRef } from "react";
 import {

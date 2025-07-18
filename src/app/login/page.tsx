@@ -6,11 +6,12 @@ import { useRouter } from 'next/navigation';
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from '../redux/store'
+import { unwrapResult } from "@reduxjs/toolkit";
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-     const dispatch = useDispatch<AppDispatch>();
+    const dispatch = useDispatch<AppDispatch>();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
@@ -22,15 +23,21 @@ const Login = () => {
         }
 
         setLoading(true);
-        const resultAction = await dispatch(loginUser({ email, password }) as any);
+        const resultAction = await dispatch(loginUser({ email, password }));
         setLoading(false);
 
-        if (loginUser.fulfilled.match(resultAction)) {
+        try {
+            const result = unwrapResult(resultAction);
             toast.success("Login successful!");
-            router.push('/'); 
-        } else {
-            toast.error(resultAction.payload?.message || "Login failed");
+            router.push('/');
+        } catch (err) {
+            if (err instanceof Error) {
+                toast.error(err.message || "Login failed");
+            } else {
+                toast.error("Login failed");
+            }
         }
+
     };
 
     return (
