@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Toaster } from "react-hot-toast";
+import { SessionProvider } from "next-auth/react";
 
 
 const geistSans = Geist({
