@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import Delete from "./DeleteTask";
+import TaskCardCalendar from "./TaskCardCalendar";
 
 const TaskCard = () => {
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newScheduledAt, setNewScheduledAt] = useState("");
+  const [newScheduledAt, setNewScheduledAt] = useState<string>("");
+  const [showCalendar, setShowCalendar] = useState(false)
+  const calendarRef = useRef<HTMLDivElement>(null)
+
   const [tasks, setTasks] = useState<
     { _id: string; title: string; description: string; scheduledAt: string }[]
   >([]);
@@ -19,6 +22,8 @@ const TaskCard = () => {
 
     const scheduledTime = new Date(newScheduledAt);
     const now = new Date();
+
+      window.dispatchEvent(new Event("tasks-updated"));
 
     if (scheduledTime < now) {
       toast.error("Event cannot be created in the past.");
@@ -38,6 +43,7 @@ const TaskCard = () => {
     });
 
     if (res.ok) {
+      window.dispatchEvent(new Event("tasks-updated"));
       const savedTask = await res.json();
       setTasks(prev => [...prev, savedTask]);
       toast.success("Task Created!");
@@ -50,7 +56,6 @@ const TaskCard = () => {
     }
   };
 
-
   useEffect(() => {
     const fetchTasks = async () => {
       const res = await fetch("/api/task");
@@ -60,10 +65,6 @@ const TaskCard = () => {
 
     fetchTasks();
   }, []);
-
- 
-
-
 
   return (
     <>
@@ -85,16 +86,14 @@ const TaskCard = () => {
               {task.title}
             </h3>
             <p className="text-md text-black mb-1">
-              {new Date(task.scheduledAt)
-                .toLocaleString("en-US", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
-                })
-              }
+              {new Date(task.scheduledAt).toLocaleString("en-US", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })}
             </p>
             <p className="text-sm text-gray-700 mb-2">{task.description}</p>
 
@@ -106,7 +105,7 @@ const TaskCard = () => {
               <button className="text-blue-600 hover:underline text-sm">
                 Edit
               </button>
-              <Delete taskId={task._id} setTasks={setTasks}/>
+              <Delete taskId={task._id} setTasks={setTasks} />
             </div>
           </div>
         </div>
@@ -115,10 +114,10 @@ const TaskCard = () => {
       {/* Add New Task Trigger */}
       <div
         onClick={() => setShowModal(true)}
-        className="p-4 bg-white rounded-2xl flex justify-between items-center mt-5 shadow-lg cursor-pointer"
+        className="p-4 bg-white rounded-xl font-medium flex w-[70%] lg:w-[30vh] justify-between items-center mt-5 shadow-lg cursor-pointer"
       >
+        <p className=""> Add New Task</p>
         <p className="px-4 text-white text-xl font-medium bg-orange-400 rounded-lg">+</p>
-        <p>Add New Task</p>
       </div>
 
       {/* Modal */}
@@ -144,12 +143,55 @@ const TaskCard = () => {
                 onChange={(e) => setNewTitle(e.target.value)}
                 className="w-full p-2 mb-2 border-0 rounded-lg focus:outline-none bg-gray-200"
               />
-              <input
-                type="datetime-local"
-                value={newScheduledAt}
-                onChange={(e) => setNewScheduledAt(e.target.value)}
-                className="w-full p-2 mb-2 rounded-lg focus:outline-none bg-gray-200"
-              />
+
+              {/* Custom Calendar */}
+              <div>
+                <input
+                  type="text"
+                  readOnly
+                  value={newScheduledAt ? new Date(newScheduledAt).toLocaleString() : ''}
+                  placeholder="Pick date and time"
+                  onClick={() => setShowCalendar(!showCalendar)}
+                  className="w-full p-2 mb-2 rounded-lg focus:outline-none bg-gray-200"
+                />
+
+                {showCalendar && (
+                  <div className="mb-2">
+                    <TaskCardCalendar
+                      value={newScheduledAt ? new Date(newScheduledAt) : null}
+                      onChange={(date) => {
+                        const existing = newScheduledAt ? new Date(newScheduledAt) : new Date();
+                        const updated = new Date(date);
+                        updated.setHours(existing.getHours());
+                        updated.setMinutes(existing.getMinutes());
+                        setNewScheduledAt(updated.toISOString());
+                        setShowCalendar(false);
+                      }}
+                    />
+                    <input
+                      type="time"
+                      className="mt-2 px-3 py-1 border rounded"
+                      value={
+                        newScheduledAt
+                          ? new Date(newScheduledAt).toLocaleTimeString("en-GB", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const [h, m] = e.target.value.split(":");
+                        const updated = newScheduledAt ? new Date(newScheduledAt) : new Date();
+                        updated.setHours(+h);
+                        updated.setMinutes(+m);
+                        setNewScheduledAt(updated.toISOString());
+                      }}
+                    />
+                  </div>
+                )}
+
+              </div>
+
               <textarea
                 placeholder="Description"
                 value={newDescription}

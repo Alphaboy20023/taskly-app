@@ -1,58 +1,72 @@
-'use client';
-import { useEffect, useState } from 'react';
+"use client";
+import { useEffect, useState } from "react";
+
+const API_KEY = 'd0da849ff0de7483a1f636999fe0c9ef';
+const CITY = "Lagos";
+const COUNTRY = "NG";
 
 const Weather = () => {
-    const [time, setTime] = useState('');
-    const [condition, setCondition] = useState('');
+    const [time, setTime] = useState("");
+    const [condition, setCondition] = useState("");
+    const [temp, setTemp] = useState("");
+    const [iconUrl, setIconUrl] = useState("");
 
-    useEffect(() => {
-        const fetchWeather = async () => {
+    const fetchWeather = async () => {
+        try {
             const res = await fetch(
-                'https://api.open-meteo.com/v1/forecast?latitude=6.5244&longitude=3.3792&current=temperature_2m,weathercode&timezone=auto'
+                `https://api.openweathermap.org/data/2.5/weather?q=${CITY},${COUNTRY}&units=metric&appid=${API_KEY}`
             );
             const data = await res.json();
 
-            const rawTime = data.current.time;
-            const parsed = new Date(rawTime);
-            const onlyTime = parsed.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
+            const now = new Date().toLocaleTimeString("en-NG", {
+                timeZone: "Africa/Lagos",
+                hour: "2-digit",
+                minute: "2-digit",
                 hour12: false,
             });
 
-            setTime(onlyTime);
-            setCondition(getWeatherDescription(data.current.weathercode));
-        };
+            const weather = data.weather?.[0];
+            const tempValue = data.main?.temp;
 
-        fetchWeather();
-    }, []);
-
-    const getWeatherDescription = (code: number) => {
-        const codes: Record<number, string> = {
-            0: 'Clear Sky',
-            1: 'Mainly Clear',
-            2: 'Partly Cloudy',
-            3: 'Normal',
-            45: 'Fog',
-            48: 'Rime Fog',
-            51: 'Light Drizzle',
-            53: 'Moderate Drizzle',
-            55: 'Dense Drizzle',
-            61: 'Light Rain',
-            63: 'Moderate Rain',
-            65: 'Heavy Rain',
-            80: 'Rain Showers',
-            95: 'Thunderstorm',
-        };
-        return codes[code] || 'Unknown';
+            setTime(now);
+            setCondition(weather?.description || "Unavailable");
+            setTemp(tempValue !== undefined ? `${Math.round(tempValue)}°C` : "");
+            setIconUrl(
+                weather?.icon
+                    ? `https://openweathermap.org/img/wn/${weather.icon}@2x.png`
+                    : ""
+            );
+        } catch (err) {
+            setTime("N/A");
+            setCondition("Failed to fetch weather");
+            setTemp("");
+            setIconUrl("");
+        }
     };
 
+    useEffect(() => {
+        fetchWeather();
+        const interval = setInterval(fetchWeather, 5 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, []);
+
     return (
-        <div className="rounded-lg shadow shadow-lg p-4 font-medium flex items-center bg-gray-100 gap-5 justify-between">
-            <p>Weather Today</p>
-            <div className='flex flex-col'>
-                <p className="text-4xl">{time}</p>
-                <p className="text-xl">{condition}</p>
+        <div className=" font-medium flex justify-center">
+            <div className="flex items-center gap-4 bg-gray-100 p-6 rounded-lg">
+                <div>
+                    {iconUrl && (
+                        <img
+                            src={iconUrl}
+                            alt="weather icon"
+                            className="w-12 h-12 object-contain"
+                        />
+                    )}
+                    {temp && <p className="text-2xl text-gray-800">{temp}</p>}
+                </div>
+                <div className="flex flex-col ">
+                    <p className="text-4xl">{time}</p>
+                    <p className="text-md capitalize">{condition}</p>
+                </div>
             </div>
         </div>
     );

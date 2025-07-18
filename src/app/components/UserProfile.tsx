@@ -1,19 +1,29 @@
-'use client'
+"use client";
 
 import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { FaUserCircle } from "react-icons/fa";
+import { logout } from '../redux/authSlice';
+import { useRouter } from 'next/navigation';
 
 const UserProfile = () => {
   const { user } = useSelector((state: any) => state.auth);
+  const dispatch = useDispatch();
+  const router = useRouter();
+
   const [showSettings, setShowSettings] = useState(false);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    router.push('/login');
+  };
 
   return (
     <>
-      <div className="flex items-center justify-between p-5">
+      <div className="flex items-center justify-between p-5 rounded-lg bg-gray-100 shadow shadow-md pt-7">
         <div>
           <p className="font-medium text-xl">
-            Hello, {user?.username || user?.name || user?.email || "Welcome"}
+            Hello, {user?.username || user?.displayName || user?.email || "Welcome"}
           </p>
 
           <button
@@ -26,17 +36,17 @@ const UserProfile = () => {
         <FaUserCircle className="text-3xl text-gray-300" />
       </div>
 
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} handleLogout={handleLogout} />}
     </>
   );
 };
 
 type SettingsModalProps = {
   onClose: () => void;
+  handleLogout: () => void;
 };
 
-const SettingsModal = ({ onClose }: SettingsModalProps) => {
-
+const SettingsModal = ({ onClose, handleLogout }: SettingsModalProps) => {
   const { user } = useSelector((state: any) => state.auth);
 
   return (
@@ -45,12 +55,12 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
         <h2 className="text-xl font-semibold mb-4">My Settings</h2>
 
         <div className="space-y-4">
-           <p className="font-medium text-xl">
-            Hello, {user?.username || user?.name || user?.email || "welcome"}
+          <p className="font-medium text-xl">
+            Hello, {user?.username || user?.name || user?.email || "Welcome"}
           </p>
 
           <p className='font-medium text-xl'>Change password</p>
-          <p className="text-red-600 font-semibold cursor-pointer">Log Out</p>
+          <button onClick={handleLogout} className="text-red-600 font-semibold cursor-pointer">Log Out</button>
         </div>
 
         <button

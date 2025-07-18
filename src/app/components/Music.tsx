@@ -9,7 +9,7 @@ import {
   FaRandom,
 } from "react-icons/fa";
 import { BsRepeat } from "react-icons/bs";
-import { musicData } from "MusicData";
+import { musicData } from "app/Music/MusicData";
 
 
 type Track = typeof musicData[number];
@@ -83,7 +83,7 @@ const MusicCard = () => {
   return (
     <div className="p-4 bg-gray-100 rounded-xl shadow-lg max-w-sm w-full ">
       <img
-        src={currentTrack?.cover || "/Img/placeholder.jpg"}
+        src="../Img/10-kilo.jpg"
         alt="Cover"
         className="w-full h-18 object-cover rounded-lg"
       />

@@ -2,33 +2,49 @@
 'use client'
 import { FcGoogle } from "react-icons/fc";
 import { useDispatch, useSelector } from 'react-redux';
-import { registerUser, googleLogin } from '../redux/authSlice'
+import { registerUser, googleLogin, setUser } from '../redux/authSlice'
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation'
 import { toast } from "react-toastify";
+import Link from "next/link";
 
 
 
 
 const SignUp = () => {
+    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const router = useRouter();
+    const [signUpType, setSignUpType] = useState<'google' | 'normal' | null>(null);
+    const [errorMessage, setErrorMessage] = useState();
+
 
     const dispatch = useDispatch()
     const { loading, error, user } = useSelector((state: any) => state.auth)
 
 
-    const handleRegisterUser = () => {
-        if (!email || !password) {
-            toast.error("Please enter email and password");
+    const handleRegisterUser = async () => {
+        if (!username || !email || !password) {
+            toast.error("Please enter all details");
             return;
         }
-        dispatch(registerUser({ email, password }) as any)
-    }
 
-    
+        setSignUpType('normal');
+
+        const resultAction = await dispatch(registerUser({ username, email, password }) as any);
+
+        if (registerUser.rejected.match(resultAction)) {
+            // @ts-ignore
+            setErrorMessage(resultAction.payload as string);
+            toast.error(resultAction.payload as string); // show backend message
+        }
+    };
+
+
+
     const handleGoogleSignUp = async () => {
+        setSignUpType('google');
         const resultAction = await dispatch(googleLogin() as any);
 
         if (googleLogin.fulfilled.match(resultAction)) {
@@ -40,21 +56,27 @@ const SignUp = () => {
     };
 
     useEffect(() => {
-         if (user) {
+        if (user && signUpType) {
             toast.success("Your account has been created successfully");
-            const timer = setTimeout(() => router.push('/'), 2000);
+            const timer = setTimeout(() => {
+                if (signUpType === 'google') {
+                    router.push('/');
+                } else {
+                    router.push('/login');
+                }
+            }, 2000);
             return () => clearTimeout(timer);
         }
-    }, [user, router])
+    }, [user, signUpType, router]);
 
 
     return (
         <>
             <div className="flex justify-center flex-col items-center h-[100vh]">
-                <div className=" bg-gray-100 p-10 rounded-lg shadow shadow-lg">
-                    <p className="font-medium text-2xl text-center text-orange-400 py-3">Welcome to taskly</p>
+                <div className=" bg-gray-100 p-12 rounded-lg shadow shadow-lg h-[95vh]">
+                    <p className="font-medium text-2xl text-center text-orange-400 py-2">Welcome to taskly</p>
                     <div className="flex items-center flex-col w-full gap-4">
-                        <p className="text-gray-600 text-xl font-medium">Enter Your email below to create an account</p>
+                        <p className="text-gray-600 text-xl text-center font-medium">Enter Your email below to create an account</p>
                         <button
                             onClick={handleGoogleSignUp}
                             className="flex items-center justify-center gap-3 px-4 py-2  border-gray-300 rounded-lg bg-white text-black hover:shadow-md transition duration-200 w-full max-w-xs mx-auto"
@@ -63,7 +85,16 @@ const SignUp = () => {
                             <span className="text-base sm:text-lg font-medium">Continue with Google</span>
                         </button>
                         <p className="font-medium text-xl">or continue with</p>
-                        <div className="flex flex-col gap-3 w-full">
+                        <div className="flex flex-col gap-2 w-full">
+                            <label htmlFor="email">Username</label>
+                            <input
+                                type="text"
+                                id="username"
+                                className="p-2 border-0 bg-gray-300 rounded-md"
+                                placeholder="you@example.com"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                            />
                             <label htmlFor="email">Email</label>
                             <input type="email" id="email"
                                 className="p-2 border-0 bg-gray-300 rounded-md focus:outline-none"
@@ -83,6 +114,10 @@ const SignUp = () => {
                         <button className="bg-black text-white text-xl p-2 w-full rounded-md"
                             onClick={handleRegisterUser}
                         >Sign Up</button>
+                        <div className="flex gap-3 font-medium text-md items-center">
+                            <p>Already have an Account?</p>
+                            <Link href="/login" className="hover:text-white hover:bg-blue-400 bg-white border border-blue-400 text-blue-400 px-3 text-xl p-1 rounded-md">Login</Link>
+                        </div>
                     </div>
                 </div>
             </div>

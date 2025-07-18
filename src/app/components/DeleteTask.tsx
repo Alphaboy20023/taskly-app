@@ -14,7 +14,9 @@ const Delete = ({ taskId, setTasks }: DeleteProps) => {
     try {
       const res = await fetch(`/api/task?id=${taskId}`, {
         method: "DELETE",
+        
       });
+      window.dispatchEvent(new Event("tasks-updated"));
 
       const data = await res.json();
 

@@ -16,17 +16,21 @@ import {
 import { FaChevronCircleRight } from "react-icons/fa";
 import { FaChevronCircleLeft } from "react-icons/fa";
 
-const Calendar = () => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  // const today = new Date();
+type CalendarProps = {
+  value: Date | null;
+  onChange: (date: Date) => void;
+};
+
+const Calendar = ({ value, onChange }: CalendarProps) => {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
   const renderHeader = () => (
-    <div className="flex justify-between items-center px-2 py-4 bg-transparent">
+    <div className="flex justify-between items-center px-2 py-4 bg-transparent pt-8">
       <div>
         <h2 className="text-lg font-semibold">{format(currentMonth, "MMMM yyyy")}</h2>
       </div>
@@ -66,13 +70,13 @@ const Calendar = () => {
       for (let i = 0; i < 7; i++) {
         const currentDay = day; // snapshot BEFORE incrementing
         const isDisabled = !isSameMonth(currentDay, monthStart);
-        const isSelected = selectedDate && isSameDay(currentDay, selectedDate);
+        const isSelected = value && isSameDay(currentDay, value);
         const formattedDate = format(currentDay, "d");
 
         daysInWeek.push(
           <div
             key={currentDay.toISOString()}
-            onClick={() => setSelectedDate(currentDay)}
+            onClick={() => onChange(currentDay)}
             className={`text-sm text-center cursor-pointer p-1 ${isDisabled ? "text-gray-300" : "text-gray-700"
               }`}
           >

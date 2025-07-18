@@ -32,7 +32,9 @@ export default function RootLayout({
 
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers>{children}</Providers> {/* ✅ wrap app in client-side provider */}
+        <Providers>
+          {children}
+        </Providers>
         <ToastContainer position="top-right" autoClose={3000} />
         <Toaster position="top-right" />
       </body>

@@ -4,7 +4,7 @@ export const musicData = [
     id: 1,
     title: "10 Kilo",
     artist: "Davido",
-    cover: "/music/covers/sweet-jam.jpg",
+    cover: "/Img/10-kilo.jpg",
     audio: "/Music/10 kilo by davido.mp3",
   },
   {
