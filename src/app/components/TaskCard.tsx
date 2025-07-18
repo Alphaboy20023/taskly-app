@@ -110,8 +110,10 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
       setNewTitle('');
       setNewDescription('');
       setNewScheduledAt('');
-    } catch  {
-      toast.error('An error occurred.');
+    } catch (error) {
+      console.error("Error in handleAddTask:", error); 
+      // @ts-ignore
+      toast.error(`An error occurred: ${error.message}`);
     }
   };
 
@@ -157,7 +159,7 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
         </div>
       ))}
 
-     
+
       <div
         onClick={handleOpenModal}
         className="p-4 bg-white rounded-xl font-medium flex lg:w-[30vh] justify-between items-center mt-5 shadow-lg cursor-pointer"
