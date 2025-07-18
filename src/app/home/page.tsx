@@ -8,11 +8,21 @@ import { FaLongArrowAltRight } from "react-icons/fa";
 import Weather from "../components/Weather"
 import { useState } from "react"
 import Image from "next/image"
+import NotificationBanner from "app/components/NotificationBanner"
 
+
+type Task = {
+  _id: string;
+  title: string;
+  description: string;
+  scheduledAt: string;
+};
 
 const Home = () => {
 
   const [newScheduledAt, setNewScheduledAt] = useState<Date | null>(new Date());
+  const [tasks, setTasks] = useState<Task[]>([]);
+
 
   return (
     <>
@@ -32,7 +42,7 @@ const Home = () => {
             <h2 className="py-8 text-xl text-black">Weekly Pinned</h2>
             <button className="text-orange-400 font-semibold">View all</button>
           </div>
-          <TaskCard />
+          <TaskCard tasks={tasks} setTasks={setTasks} />
           <div className="w-full lg:hidden mt-5">
             <SchedulePage />
           </div>
@@ -41,12 +51,16 @@ const Home = () => {
         <div className="w-full hidden lg:block">
           <SchedulePage />
         </div>
+        <NotificationBanner tasks={tasks} />
         <div className="lg:w-1/2 w-full space-y-10 p-3 bg-white">
           <div className=" hidden lg:block">
             <UserProfile />
           </div>
           <Weather />
           <MusicCard />
+          <div>
+
+          </div>
           <div className="rounded-lg p-6 shadow shadow-lg bg-gray-100 space-y-3">
             <p className="text-3xl">
               unleash the freelance super power

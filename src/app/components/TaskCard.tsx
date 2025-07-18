@@ -16,14 +16,18 @@ type Task = {
   scheduledAt: string;
 };
 
-const TaskCard = () => {
+type Props = {
+  tasks: Task[];
+  setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
+};
+
+const TaskCard = ({ tasks, setTasks }: Props) => {
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newScheduledAt, setNewScheduledAt] = useState<string>('');
   const [showCalendar, setShowCalendar] = useState(false);
   const [user, setUser] = useState<User | null | { getIdToken: () => string } | undefined>(undefined);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const router = useRouter();
 
   const fetchTasks = useCallback(async () => {
