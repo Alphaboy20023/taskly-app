@@ -39,7 +39,7 @@ const EditTask = ({ task, setTasks }: Props) => {
       );
       toast.success('Task updated!');
       setShow(false);
-    } catch (err) {
+    } catch {
       toast.error('Update failed');
     }
   };

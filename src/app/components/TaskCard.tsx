@@ -107,8 +107,8 @@ const TaskCard = () => {
       setNewTitle('');
       setNewDescription('');
       setNewScheduledAt('');
-    } catch (err: any) {
-      toast.error(err?.message || 'An error occurred.');
+    } catch  {
+      toast.error('An error occurred.');
     }
   };
 

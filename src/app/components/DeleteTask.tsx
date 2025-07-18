@@ -18,8 +18,8 @@ type DeleteProps = {
 
 const Delete = ({ taskId, setTasks }: DeleteProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [user, setUser] = useState<User | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
     const auth = getAuth();
@@ -31,7 +31,7 @@ const Delete = ({ taskId, setTasks }: DeleteProps) => {
   }, []);
 
   const handleDeleteTask = async () => {
-    
+
 
     try {
       const res = await fetch(`/api/task?id=${taskId}`, {
