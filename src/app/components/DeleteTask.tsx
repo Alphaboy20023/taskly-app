@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { onAuthStateChanged, getAuth, User } from "firebase/auth";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
 
 type Task = {
   _id: string;
