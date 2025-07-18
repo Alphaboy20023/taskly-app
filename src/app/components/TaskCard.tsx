@@ -95,7 +95,6 @@ const TaskCard = ({}: Props) => {
     } catch (error) {
       console.error('Error fetching tasks:', error);
       setTasks([]);
-      toast.error('Failed to load tasks.');
     }
   }, [setTasks, router, user]);
 

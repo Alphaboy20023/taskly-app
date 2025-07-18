@@ -64,7 +64,6 @@ const SchedulePage = () => {
 
             if (!idToken) {
                 setTasks([]);
-                toast.error('Authentication required to view schedule.');
                 return;
             }
 
@@ -104,7 +103,6 @@ const SchedulePage = () => {
         } catch (error) {
             console.error("Error fetching tasks:", error);
             setTasks([]);
-            toast.error("An error occurred while fetching tasks.");
         }
     }, [setTasks, today, user, router]);
 
