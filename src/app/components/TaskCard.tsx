@@ -112,7 +112,7 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
       setNewScheduledAt('');
     } catch (error) {
       console.error("Error in handleAddTask:", error); 
-      // @ts-ignore
+      // @ts-expect-error
       toast.error(`An error occurred: ${error.message}`);
     }
   };
