@@ -78,7 +78,7 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
       console.error('Error fetching tasks:', error);
       setTasks([]);
     }
-  }, [setTasks, user]);
+  }, [setTasks]);
 
   useEffect(() => {
     const auth = getAuth(app);
@@ -99,11 +99,20 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
           setTasks([]);
         }
       }
-      await fetchTasks();
+      if (firebaseUser) {
+        setUser(firebaseUser);
+      }
     });
 
     return () => unsubscribe();
   }, [fetchTasks, setTasks]);
+
+
+  useEffect(() => {
+    if (user) {
+      fetchTasks();
+    }
+  }, [user]);
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -268,9 +277,9 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
                       value={
                         newScheduledAt
                           ? new Date(newScheduledAt).toLocaleTimeString('en-GB', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
                           : ''
                       }
                       onChange={(e) => {
