@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 'use client';
 import { useEffect, useState, useRef } from "react";
 import {
@@ -30,7 +31,7 @@ const MusicCard = () => {
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
-    isPlaying ? audio.pause() : audio.play();
+    // isPlaying ? audio.pause() : audio.play();
     setIsPlaying(!isPlaying);
   };
 

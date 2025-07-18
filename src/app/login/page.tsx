@@ -5,14 +5,15 @@ import { loginUser } from "app/redux/authSlice";
 import { useRouter } from 'next/navigation';
 import { useState } from "react";
 import { useDispatch } from "react-redux";
+import { AppDispatch } from '../redux/store'
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const dispatch = useDispatch();
+     const dispatch = useDispatch<AppDispatch>();
     const router = useRouter();
+    const [loading, setLoading] = useState(false);
 
-    // const { user, error } = useSelector((state: any) => state.auth);
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -20,11 +21,13 @@ const Login = () => {
             return;
         }
 
+        setLoading(true);
         const resultAction = await dispatch(loginUser({ email, password }) as any);
+        setLoading(false);
 
         if (loginUser.fulfilled.match(resultAction)) {
             toast.success("Login successful!");
-            router.push('/'); // redirect to home or dashboard
+            router.push('/'); 
         } else {
             toast.error(resultAction.payload?.message || "Login failed");
         }
@@ -37,7 +40,7 @@ const Login = () => {
                 <p className="font-medium text-2xl text-center">Login</p>
                 <div className="flex items-center flex-col w-full gap-7">
                     <div className="flex flex-col gap-3 w-full">
-                        
+
                         <label htmlFor="email">Email</label>
                         <input
                             type="text"
@@ -59,10 +62,11 @@ const Login = () => {
                     </div>
 
                     <button
-                        className="bg-black text-white p-2 text-xl w-full rounded-md"
+                        className="bg-black text-white p-2 text-xl w-full rounded-md disabled:opacity-50"
                         onClick={handleLogin}
+                        disabled={loading}
                     >
-                        Login
+                        {loading ? "Logging in..." : "Login"}
                     </button>
                     <div className="flex gap-3 flex-wrap font-medium text-xl items-center">
                         <p>Don&apos;t have an Account?</p>
