@@ -20,4 +20,4 @@ googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
 
-export { auth, googleProvider };
+export { auth, googleProvider, app };

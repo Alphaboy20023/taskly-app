@@ -47,7 +47,41 @@ export async function DELETE(req: Request) {
     }
 
     return NextResponse.json({ message: "Task deleted" }, { status: 200 });
-  } catch {
+  } catch  {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+
+// PUT
+export async function PUT(req: Request) {
+  try {
+    await connectDB();
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing ID" }, { status: 400 });
+    }
+
+    const { title, description, scheduledAt } = await req.json();
+    if (!title || !scheduledAt) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      id,
+      { title, description, scheduledAt },
+      { new: true }
+    );
+
+    if (!updatedTask) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(updatedTask, { status: 200 });
+  } catch (err) {
+    console.error("PUT error:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+

@@ -1,9 +1,7 @@
-'use client'
-// import axios from "axios";
-import { auth, googleProvider } from '../lib/firebase'
-import { signInWithPopup } from "firebase/auth";
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
-
+'use client';
+import { auth, googleProvider } from '../lib/firebase';
+import { signInWithPopup } from 'firebase/auth';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 export interface User {
   username?: string;
@@ -11,163 +9,169 @@ export interface User {
   name?: string;
   email: string;
 }
+
 interface AuthState {
   user: User | null;
-  loading: boolean
-  error: null | string
+  loading: boolean;
+  error: string | null;
 }
 
 const initialState: AuthState = {
   user: null,
   loading: false,
   error: null,
-}
+};
+
+// Utilities
+const setAuthStorage = (user: User, token: string) => {
+  localStorage.setItem('taskly_user', JSON.stringify(user));
+  localStorage.setItem('taskly_token', token);
+};
+
+const clearAuthStorage = () => {
+  localStorage.removeItem('taskly_user');
+  localStorage.removeItem('taskly_token');
+};
 
 // Register
 export const registerUser = createAsyncThunk(
   'auth/register',
-  async (userData: { username: string; email: string; password: string }, thunkAPI) => {
+  async (
+    userData: { username: string; email: string; password: string },
+    thunkAPI
+  ) => {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: userData.username,
-          email: userData.email,
-          password: userData.password,
-        }),
+        body: JSON.stringify(userData),
       });
 
       const data = await response.json();
-
       if (!response.ok) {
-        return thunkAPI.rejectWithValue(data.message || 'Registration failed')
-      };
+        return thunkAPI.rejectWithValue(data.message || 'Registration failed');
+      }
+
+      setAuthStorage(data.user, data.token);
       return data.user;
     } catch (err) {
-      if (err instanceof Error) {
-        return thunkAPI.rejectWithValue(err.message);
-      }
-      return thunkAPI.rejectWithValue('An unknown error occurred');
+      return thunkAPI.rejectWithValue(
+        err instanceof Error ? err.message : 'An unknown error occurred'
+      );
     }
   }
 );
 
-
 // Login
 export const loginUser = createAsyncThunk(
   'auth/login',
-  async (credentials: { email: string; password: string }, thunkAPI) => {
+  async (
+    credentials: { email: string; password: string },
+    thunkAPI
+  ) => {
     try {
-
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
-      })
+      });
 
-      if (!res.ok) throw new Error('Login failed')
       const data = await res.json();
-      console.log("Login API response:", data);
+      if (!res.ok) throw new Error(data.message || 'Login failed');
+
+      setAuthStorage(data.user, data.token);
       return data.user;
     } catch (err) {
-      if (err instanceof Error) {
-        return thunkAPI.rejectWithValue(err.message);
-      }
-      return thunkAPI.rejectWithValue('An unknown error occurred');
+      return thunkAPI.rejectWithValue(
+        err instanceof Error ? err.message : 'An unknown error occurred'
+      );
     }
   }
-)
+);
 
+// Google Login
 export const googleLogin = createAsyncThunk(
   'auth/googleLogin',
   async (_, thunkAPI) => {
     try {
-      const result = await signInWithPopup(auth, googleProvider)
-      const user = result.user
-      const idToken = await user.getIdToken()
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      const token = await user.getIdToken();
 
-      const payload = {
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        uid: user.uid,
-        token: idToken,
-      }
+      const payload: User = {
+        email: user.email!,
+        displayName: user.displayName!,
+        name: user.displayName!,
+      };
 
-      localStorage.setItem('kleistic_user', JSON.stringify(payload))
-
-      return payload
+      setAuthStorage(payload, token);
+      return payload;
     } catch (err) {
-      if (err instanceof Error) {
-        return thunkAPI.rejectWithValue(err.message);
-      }
-      return thunkAPI.rejectWithValue('An unknown error occurred');
+      return thunkAPI.rejectWithValue(
+        err instanceof Error ? err.message : 'An unknown error occurred'
+      );
     }
   }
-)
+);
 
+// Slice
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setUser: (state, action: {payload:User}) => {
+    setUser: (state, action: { payload: User }) => {
       state.user = action.payload;
     },
+    
     logout: (state) => {
-      state.user = null
-      localStorage.removeItem("user");
+      state.user = null;
+      clearAuthStorage();
     },
   },
   extraReducers: (builder) => {
-    builder
-      // Login
-      .addCase(loginUser.pending, (state) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(loginUser.fulfilled, (state, action) => {
-        state.loading = false
-        state.user = action.payload
-      })
-      .addCase(loginUser.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload as string
-      })
+    // Login
+    builder.addCase(loginUser.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(loginUser.fulfilled, (state, action) => {
+      state.loading = false;
+      state.user = action.payload;
+    });
+    builder.addCase(loginUser.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
 
-      // Register
-      .addCase(registerUser.pending, (state) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(registerUser.fulfilled, (state, action) => {
-        state.loading = false
-        state.user = action.payload
-      })
-      .addCase(registerUser.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload as string
-      })
+    // Register
+    builder.addCase(registerUser.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(registerUser.fulfilled, (state, action) => {
+      state.loading = false;
+      state.user = action.payload;
+    });
+    builder.addCase(registerUser.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
 
-      // google-login
-      .addCase(googleLogin.pending, (state) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(googleLogin.fulfilled, (state, action) => {
-        state.loading = false
-        // @ts-expect-error action.payload is possibly not correctly typed
-        state.user = action.payload
-      })
-      .addCase(googleLogin.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload as string
-      })
+    // Google Login
+    builder.addCase(googleLogin.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(googleLogin.fulfilled, (state, action) => {
+      state.loading = false;
+      state.user = action.payload;
+    });
+    builder.addCase(googleLogin.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
   },
-})
+});
 
-export const { logout, setUser, } = authSlice.actions
-export default authSlice.reducer
-
-
-
+export const { logout, setUser } = authSlice.actions;
+export default authSlice.reducer;

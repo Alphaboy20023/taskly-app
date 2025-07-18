@@ -18,11 +18,13 @@ const SignUp = () => {
     const [password, setPassword] = useState('');
     const router = useRouter();
     const [signUpType, setSignUpType] = useState<'google' | 'normal' | null>(null);
+    const [loading, setLoading] = useState(false);
+
 
 
 
     const dispatch = useDispatch<AppDispatch>();
-    const {  user } = useSelector((state: RootState) => state.auth)
+    const { user } = useSelector((state: RootState) => state.auth)
 
 
     const handleRegisterUser = async () => {
@@ -33,8 +35,9 @@ const SignUp = () => {
 
         setSignUpType('normal');
 
+        setLoading(true);
         const resultAction = await dispatch(registerUser({ username, email, password }));
-
+        setLoading(false);
         if (registerUser.rejected.match(resultAction)) {
             toast.error(resultAction.payload as string); // backend message
         }
@@ -44,6 +47,7 @@ const SignUp = () => {
 
     const handleGoogleSignUp = async () => {
         setSignUpType('google');
+
         const resultAction = await dispatch(googleLogin());
 
         if (googleLogin.fulfilled.match(resultAction)) {
@@ -110,9 +114,14 @@ const SignUp = () => {
                             />
                         </div>
 
-                        <button className="bg-black text-white text-xl p-2 w-full rounded-md"
+                        <button
+                            className="bg-gray-800 text-white p-2 text-xl w-full rounded-md"
                             onClick={handleRegisterUser}
-                        >Sign Up</button>
+                            disabled={loading}
+                        >
+                            {loading ? "Registering..." : "Sign Up"}
+                        </button>
+
                         <div className="flex gap-3 font-medium text-md items-center">
                             <p>Already have an Account?</p>
                             <Link href="/login" className="hover:text-white hover:bg-blue-400 bg-white border border-blue-400 text-blue-400 px-3 text-xl p-1 rounded-md">Login</Link>

@@ -17,7 +17,7 @@ const Home = () => {
   return (
     <>
       <div className="flex lg:flex-nowrap flex-wrap">
-        <div className="lg:hidden shadow shadow-lg w-full">
+        <div className="lg:hidden  w-full shadow shadow-lg bg-gray-300">
           <UserProfile />
         </div>
         <div className="flex flex-col p-6 bg-[#F6F7FB] lg:w-1/2 w-full">

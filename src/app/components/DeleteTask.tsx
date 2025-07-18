@@ -1,6 +1,8 @@
 'use client';
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { onAuthStateChanged, getAuth, User } from "firebase/auth";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 type Task = {
   _id: string;
@@ -16,8 +18,21 @@ type DeleteProps = {
 
 const Delete = ({ taskId, setTasks }: DeleteProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleDeleteTask = async () => {
+    
+
     try {
       const res = await fetch(`/api/task?id=${taskId}`, {
         method: "DELETE",
@@ -46,8 +61,10 @@ const Delete = ({ taskId, setTasks }: DeleteProps) => {
   return (
     <>
       <button
-        className="text-red-600 hover:underline text-sm"
-        onClick={() => setIsOpen(true)}
+        className="text-red-600 hover:underline text-md"
+        onClick={() => {
+          setIsOpen(true);
+        }}
       >
         Delete
       </button>
@@ -56,7 +73,9 @@ const Delete = ({ taskId, setTasks }: DeleteProps) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm">
             <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
-            <p className="text-gray-600 mb-6">Are you sure you want to delete this task?</p>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this task?
+            </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setIsOpen(false)}
