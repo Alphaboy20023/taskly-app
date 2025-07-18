@@ -110,10 +110,14 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
       setNewTitle('');
       setNewDescription('');
       setNewScheduledAt('');
-    } catch (error) {
-      console.error("Error in handleAddTask:", error); 
-      // @ts-expect-error
-      toast.error(`An error occurred: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`An error occurred: ${error.message}`);
+        console.error("Error in handleAddTask:", error.message);
+      } else {
+        toast.error("An unknown error occurred.");
+        console.error("Unknown error in handleAddTask:", error);
+      }
     }
   };
 
