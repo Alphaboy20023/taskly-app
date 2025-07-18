@@ -115,7 +115,7 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
         toast.error(`An error occurred: ${error.message}`);
         console.error("Error in handleAddTask:", error.message);
       } else {
-        toast.error("An unknown error occurred.");
+        toast.error("An unknown error occurred.",);
         console.error("Unknown error in handleAddTask:", error);
       }
     }
