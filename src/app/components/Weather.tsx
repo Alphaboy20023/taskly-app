@@ -55,7 +55,7 @@ const Weather = () => {
         <div className=" font-medium flex justify-center">
             <div className="flex items-center gap-4 bg-gray-100 justify-between p-6 rounded-lg w-full">
                 <div>
-                    {iconUrl && (
+                    {/* {iconUrl && (
                         <Image
                             src={iconUrl}
                             alt="weather icon"
@@ -63,7 +63,7 @@ const Weather = () => {
                             width={10}
                             height={10}
                         />
-                    )}
+                    )} */}
                     {temp && <p className="text-2xl text-gray-800">{temp}</p>}
                 </div>
                 <div className="flex flex-col ">

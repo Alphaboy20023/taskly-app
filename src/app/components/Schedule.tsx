@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import TaskDetailModal from "./TaskDetailModal";
 import Image from "next/image";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
+import { app } from 'app/lib/firebase';
+import { useRouter } from 'next/navigation';
 
 export type Task = {
     _id: string;
@@ -12,11 +15,17 @@ export type Task = {
     scheduledAt: string;
 };
 
+type StoredUser = {
+  uid: string;
+  email?: string;
+};
+
 const SchedulePage = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+    const [user, setUser] = useState<User | StoredUser | null>(null);
+    const [isAuthReady, setIsAuthReady] = useState(false);
+    const router = useRouter();
 
     const today = useMemo(() => {
         const date = new Date();
@@ -24,30 +33,115 @@ const SchedulePage = () => {
         return date;
     }, []);
 
-    useEffect(() => {
-        const fetchTasks = async () => {
+    const getToken = async () => {
+        if (!user) return null;
+
+        if ('getIdToken' in user && typeof (user as User).getIdToken === 'function') {
             try {
-                const res = await fetch("/api/task");
-                const data = await res.json();
-                const filtered = data.filter((task: Task) => {
-                    const taskDate = new Date(task.scheduledAt);
-                    taskDate.setHours(0, 0, 0, 0);
-                    return taskDate >= today;
-                });
-                setTasks(filtered);
-                setErrorMessage(null);
+                const idToken = await (user as User).getIdToken(true);
+                return idToken;
             } catch (error) {
-                console.error("Error fetching tasks:", error);
-                // setErrorMessage('An unexpected error occured');
+                console.error("Error refreshing ID token in SchedulePage:", error);
+                return null;
+            }
+        }
+        return null;
+    };
+
+    const safeParseJSON = async (res: Response) => {
+        const text = await res.text();
+        try {
+            return text ? JSON.parse(text) : null;
+        } catch (e) {
+            console.error('Failed to parse JSON response in SchedulePage:', e, 'Response text:', text);
+            return null;
+        }
+    };
+
+    const fetchTasks = useCallback(async () => {
+        try {
+            const idToken = await getToken();
+
+            if (!idToken) {
+                setTasks([]);
+                toast.error('Authentication required to view schedule.');
+                return;
+            }
+
+            const res = await fetch("/api/task", {
+                headers: {
+                    Authorization: `Bearer ${idToken}`,
+                },
+                cache: 'no-store',
+            });
+
+            if (!res.ok) {
+                const errorBody = await safeParseJSON(res);
+                if (res.status === 401) {
+                    toast.error('Session expired. Please log in again.');
+                    router.push('/login');
+                    setTasks([]);
+                    return;
+                }
+                throw new Error(errorBody?.error || `Failed to fetch tasks with status: ${res.status}`);
+            }
+
+            const data = await res.json();
+
+            if (!Array.isArray(data)) {
+                console.error("API did not return an array of tasks:", data);
+                setTasks([]);
+                toast.error("Failed to load tasks due to unexpected data format.");
+                return;
+            }
+
+            const filtered = data.filter((task: Task) => {
+                const taskDate = new Date(task.scheduledAt);
+                taskDate.setHours(0, 0, 0, 0);
+                return taskDate >= today;
+            });
+            setTasks(filtered);
+        } catch (error) {
+            console.error("Error fetching tasks:", error);
+            setTasks([]);
+            toast.error("An error occurred while fetching tasks.");
+        }
+    }, [setTasks, today, user, router]);
+
+    useEffect(() => {
+        const auth = getAuth(app);
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+            if (firebaseUser) {
+                setUser(firebaseUser);
+            } else {
+                setUser(null);
+            }
+            setIsAuthReady(true);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        if (isAuthReady) {
+            if (user) {
+                fetchTasks();
+            } else {
+                setTasks([]);
+            }
+        }
+    }, [user, isAuthReady, fetchTasks, setTasks]);
+
+
+    useEffect(() => {
+        const handleUpdate = () => {
+            if (user && isAuthReady) {
+                fetchTasks();
             }
         };
-
-        fetchTasks();
-
-        const handleUpdate = () => fetchTasks();
         window.addEventListener("tasks-updated", handleUpdate);
         return () => window.removeEventListener("tasks-updated", handleUpdate);
-    }, [today]);
+    }, [fetchTasks, user, isAuthReady]);
 
     const openModal = (task: Task) => setSelectedTask(task);
     const closeModal = () => setSelectedTask(null);
@@ -62,13 +156,13 @@ const SchedulePage = () => {
         return date > today;
     });
 
-    useEffect(() => {
-        if (errorMessage) {
-            toast.error(errorMessage);
-        }
-    }, [errorMessage]);
-
-    
+    if (!isAuthReady) {
+        return (
+            <div className="p-4 w-full bg-white flex justify-center items-center h-screen">
+                <p className="text-gray-500 text-lg">Loading schedule...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="p-4 w-full bg-white">
@@ -90,7 +184,6 @@ const SchedulePage = () => {
                 />
             </div>
 
-            {/* Today's Schedule */}
             {todayTasks.length > 0 && (
                 <>
                     <h2 className="text-xl font-semibold mb-2 px-2">Today&apos;s Schedule</h2>
@@ -124,7 +217,6 @@ const SchedulePage = () => {
                 </>
             )}
 
-            {/* Upcoming Events */}
             {upcomingTasks.length > 0 && (
                 <>
                     <h2 className="text-xl font-semibold mb-2 px-2">Upcoming Events</h2>
@@ -176,3 +268,5 @@ const SchedulePage = () => {
 };
 
 export default SchedulePage;
+
+

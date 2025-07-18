@@ -42,7 +42,7 @@ const Home = () => {
             <h2 className="py-8 text-xl text-black">Weekly Pinned</h2>
             <button className="text-orange-400 font-semibold">View all</button>
           </div>
-          <TaskCard tasks={tasks} setTasks={setTasks} />
+          <TaskCard />
           <div className="w-full lg:hidden mt-5">
             <SchedulePage />
           </div>

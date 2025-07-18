@@ -16,41 +16,44 @@ type Task = {
   scheduledAt: string;
 };
 
-type Props = {
-  tasks: Task[];
-  setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
-};
+type Props = Record<string, never>;
 
 type StoredUser = {
   uid: string;
   email?: string;
-  getIdToken: () => Promise<string>;
 };
 
-const TaskCard = ({ tasks, setTasks }: Props) => {
+const TaskCard = ({}: Props) => {
+  const [tasks, setTasks] = useState<Task[]>([]); // TaskCard manages its own tasks state
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newScheduledAt, setNewScheduledAt] = useState<string>('');
   const [showCalendar, setShowCalendar] = useState(false);
   const [user, setUser] = useState<User | StoredUser | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const router = useRouter();
 
-  // Helper: get id token safely
   const getToken = async () => {
     if (!user) return null;
-    if ('getIdToken' in user && typeof user.getIdToken === 'function') {
-      return await user.getIdToken();
+    if ('getIdToken' in user && typeof (user as User).getIdToken === 'function') {
+      try {
+        const idToken = await (user as User).getIdToken(true);
+        return idToken;
+      } catch (error) {
+        console.error("Error refreshing ID token:", error);
+        return null;
+      }
     }
     return null;
   };
 
-  // Safe parse JSON helper
   const safeParseJSON = async (res: Response) => {
     const text = await res.text();
     try {
       return text ? JSON.parse(text) : null;
-    } catch {
+    } catch (e) {
+      console.error('Failed to parse JSON response:', e, 'Response text:', text);
       return null;
     }
   };
@@ -68,17 +71,33 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
+        cache: 'no-store',
       });
 
-      if (!res.ok) throw new Error('Failed to fetch tasks');
+      if (!res.ok) {
+        const errorBody = await safeParseJSON(res);
+        if (res.status === 401) {
+          toast.error('Session expired. Please log in again.');
+          router.push('/login');
+          return;
+        }
+        throw new Error(errorBody?.error || `Failed to fetch tasks with status: ${res.status}`);
+      }
 
       const data = await res.json();
+      if (!Array.isArray(data)) {
+        console.error("API did not return an array of tasks:", data);
+        setTasks([]);
+        toast.error("Failed to load tasks due to unexpected data format.");
+        return;
+      }
       setTasks(data);
     } catch (error) {
       console.error('Error fetching tasks:', error);
       setTasks([]);
+      toast.error('Failed to load tasks.');
     }
-  }, [setTasks]);
+  }, [setTasks, router, user]);
 
   useEffect(() => {
     const auth = getAuth(app);
@@ -86,33 +105,32 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
       if (firebaseUser) {
         setUser(firebaseUser);
       } else {
-        const storedUserJSON = localStorage.getItem('taskly_user');
-        const storedToken = localStorage.getItem('taskly_token');
-        if (storedUserJSON && storedToken) {
-          const parsedUser = JSON.parse(storedUserJSON);
-          setUser({
-            ...parsedUser,
-            getIdToken: () => Promise.resolve(storedToken),
-          });
-        } else {
-          setUser(null);
-          setTasks([]);
-        }
+        setUser(null);
       }
-      if (firebaseUser) {
-        setUser(firebaseUser);
-      }
+      setIsAuthReady(true);
     });
-
     return () => unsubscribe();
-  }, [fetchTasks, setTasks]);
+  }, []);
+
+  useEffect(() => {
+    if (user && isAuthReady) {
+      fetchTasks();
+    } else if (isAuthReady) {
+      setTasks([]);
+    }
+  }, [user, isAuthReady, fetchTasks, setTasks]);
 
 
   useEffect(() => {
-    if (user) {
-      fetchTasks();
-    }
-  }, [user]);
+    const handleUpdate = () => {
+      if (user && isAuthReady) {
+        fetchTasks();
+      }
+    };
+    window.addEventListener("tasks-updated", handleUpdate);
+    return () => window.removeEventListener("tasks-updated", handleUpdate);
+  }, [fetchTasks, user, isAuthReady]);
+
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,6 +161,7 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
         router.push('/login');
         return;
       }
+      console.log('Sending task:', taskData);
 
       const res = await fetch('/api/task', {
         method: 'POST',
@@ -156,12 +175,16 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
       const resBody = await safeParseJSON(res);
 
       if (!res.ok) {
+        if (res.status === 401) {
+          toast.error('Session expired. Please log in again.');
+          router.push('/login');
+          return;
+        }
         throw new Error(resBody?.error || 'Server error');
       }
 
       setTasks((prev) => [...prev, resBody]);
-      window.dispatchEvent(new Event('tasks-updated'));
-
+      window.dispatchEvent(new Event('tasks-updated')); 
       toast.success('Task created!');
       setShowModal(false);
       setNewTitle('');
@@ -189,6 +212,8 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
 
   return (
     <>
+   
+  
       {tasks.map((task) => (
         <div
           key={task._id}
@@ -197,21 +222,24 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
           <div className="flex-1">
             <h3 className="text-lg font-semibold text-gray-800">{task.title}</h3>
             <p className="text-md text-black mb-1">
-              {new Date(task.scheduledAt).toLocaleString('en-US', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-              })}
+              {task.scheduledAt
+                ? new Date(task.scheduledAt).toLocaleString('en-US', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })
+                : 'No scheduled date'}
             </p>
             <p className="text-sm text-gray-700 mb-2">{task.description}</p>
             <span className="inline-block text-xs px-2 py-1 rounded-full font-semibold bg-yellow-100 text-yellow-700 mb-3">
               Scheduled
             </span>
             <div className="flex gap-3 mt-2">
-              <EditTask task={task} setTasks={setTasks} />
+              {/* Edit and Delete Task components will need to dispatch 'tasks-updated' event */}
+              <EditTask task={task} setTasks={setTasks} /> {/* No fetchTasks prop needed here for EditTask/DeleteTask if they dispatch event */}
               <Delete taskId={task._id} setTasks={setTasks} />
             </div>
           </div>
@@ -226,7 +254,6 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
         <p className="px-4 text-white text-xl font-medium bg-orange-400 rounded-lg">+</p>
       </div>
 
-      {/* Modal */}
       {showModal && user && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md relative shadow-lg">
@@ -246,6 +273,7 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 className="w-full p-2 mb-2 border-0 rounded-lg focus:outline-none bg-gray-200"
+                required
               />
 
               <div>
@@ -256,6 +284,7 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
                   placeholder="Pick date and time"
                   onClick={() => setShowCalendar(!showCalendar)}
                   className="w-full p-2 mb-2 rounded-lg focus:outline-none bg-gray-200 cursor-pointer"
+                  required
                 />
 
                 {showCalendar && (
@@ -277,9 +306,9 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
                       value={
                         newScheduledAt
                           ? new Date(newScheduledAt).toLocaleTimeString('en-GB', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
                           : ''
                       }
                       onChange={(e) => {

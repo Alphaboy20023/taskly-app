@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone', // this is the key
+  output: 'standalone', 
   experimental: {
-    serverActions: true, // if you're using it
+    serverActions: {}, 
   }
 }
 
