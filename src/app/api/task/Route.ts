@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) { // Ensure this is correctly exported
+export async function POST(req: NextRequest) { // This function MUST be present and correctly exported
   console.log("API Task Route: POST handler started.");
   try {
     await connectDB();
