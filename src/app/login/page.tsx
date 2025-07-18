@@ -44,15 +44,15 @@ const Login = () => {
         <div className="flex justify-center flex-col items-center h-[100vh]">
             <div className="bg-gray-100 p-10 rounded-lg lg:w-1/3 w-auto">
                 <p className="font-medium text-2xl text-orange-600 text-center">Welcome back to taskly</p>
-                <p className="font-medium text-2xl text-center">Login</p>
+                <p className="font-medium text-2xl text-center text-black">Login</p>
                 <div className="flex items-center flex-col w-full gap-7">
-                    <div className="flex flex-col gap-3 w-full">
+                    <div className="flex flex-col gap-3 w-full ">
 
-                        <label htmlFor="email">Email</label>
+                        <label htmlFor="email"className="text-black font-medium" >Email</label>
                         <input
                             type="text"
                             id="email"
-                            className="p-2 border-0 bg-gray-300 rounded-md"
+                            className="p-2 focus:outline-none rounded-md border border-gray-300 rounded-lg bg-gray-300"
                             placeholder="you@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -61,7 +61,7 @@ const Login = () => {
                         <input
                             type="password"
                             id="password"
-                            className="p-2 border-0 bg-gray-300 rounded-md"
+                            className="p-2 bg-gray-300 focus:outline-none rounded-md border border-gray-400 rounded-lg"
                             placeholder="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}

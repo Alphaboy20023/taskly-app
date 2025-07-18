@@ -17,7 +17,7 @@ const Home = () => {
   return (
     <>
       <div className="flex lg:flex-nowrap flex-wrap">
-        <div className="lg:hidden  w-full shadow shadow-lg bg-gray-300">
+        <div className="lg:hidden w-full shadow shadow-lg bg-gray-300">
           <UserProfile />
         </div>
         <div className="flex flex-col p-6 bg-[#F6F7FB] lg:w-1/2 w-full">
@@ -33,9 +33,12 @@ const Home = () => {
             <button className="text-orange-400 font-semibold">View all</button>
           </div>
           <TaskCard />
+          <div className="w-full lg:hidden mt-5">
+            <SchedulePage />
+          </div>
           <Calendar value={newScheduledAt} onChange={setNewScheduledAt} />
         </div>
-        <div className="w-full">
+        <div className="w-full hidden lg:block">
           <SchedulePage />
         </div>
         <div className="lg:w-1/2 w-full space-y-10 p-3 bg-white">

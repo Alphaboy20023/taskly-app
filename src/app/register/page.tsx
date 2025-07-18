@@ -87,27 +87,27 @@ const SignUp = () => {
                             <FcGoogle className="text-2xl" />
                             <span className="text-base sm:text-lg font-medium">Continue with Google</span>
                         </button>
-                        <p className="font-medium text-xl">or continue with</p>
+                        <p className="font-medium text-xl text-black">or continue with</p>
                         <div className="flex flex-col gap-2 w-full">
                             <label htmlFor="email">Username</label>
                             <input
                                 type="text"
                                 id="username"
-                                className="p-2 border-0 bg-gray-300 rounded-md"
+                                className="p-2 bg-gray-300 focus:outline-none rounded-md border border-gray-100 rounded-md"
                                 placeholder="you@example.com"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                             />
                             <label htmlFor="email">Email</label>
                             <input type="email" id="email"
-                                className="p-2 border-0 bg-gray-300 rounded-md focus:outline-none"
+                                className="p-2 bg-gray-300 focus:outline-none rounded-md border border-gray-100 rounded-md"
                                 placeholder="you@example.com"
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                             />
                             <label htmlFor="password">Password</label>
                             <input type="password" id="password"
-                                className="p-2 border-0 bg-gray-300 rounded-md focus:outline-none"
+                                className="p-2 bg-gray-300 focus:outline-none rounded-md border border-gray-100 rounded-md"
                                 placeholder="password"
                                 onChange={(e) => setPassword(e.target.value)}
 
@@ -123,7 +123,7 @@ const SignUp = () => {
                         </button>
 
                         <div className="flex gap-3 font-medium text-md items-center">
-                            <p>Already have an Account?</p>
+                            <p className="text-black">Already have an Account?</p>
                             <Link href="/login" className="hover:text-white hover:bg-blue-400 bg-white border border-blue-400 text-blue-400 px-3 text-xl p-1 rounded-md">Login</Link>
                         </div>
                     </div>

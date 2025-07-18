@@ -35,8 +35,8 @@ const Calendar = ({ value, onChange }: CalendarProps) => {
         <h2 className="text-lg font-semibold text-black">{format(currentMonth, "MMMM yyyy")}</h2>
       </div>
       <div className="flex gap-5">
-        <button onClick={prevMonth} className="text-2xl font-bold"><FaChevronCircleLeft /></button>
-        <button onClick={nextMonth} className="text-2xl font-bold"><FaChevronCircleRight /></button>
+        <button onClick={prevMonth} className="text-2xl font-bold text-black"><FaChevronCircleLeft /></button>
+        <button onClick={nextMonth} className="text-2xl font-bold text-black"><FaChevronCircleRight /></button>
       </div>
      
     </div>
