@@ -12,7 +12,7 @@ const Login = () => {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const { user, error } = useSelector((state: any) => state.auth);
+    // const { user, error } = useSelector((state: any) => state.auth);
 
     const handleLogin = async () => {
         if (!email || !password) {

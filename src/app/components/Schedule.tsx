@@ -43,7 +43,7 @@ const SchedulePage = () => {
         const handleUpdate = () => fetchTasks();
         window.addEventListener("tasks-updated", handleUpdate);
         return () => window.removeEventListener("tasks-updated", handleUpdate);
-    }, []);
+    }, [today]);
 
     const openModal = (task: Task) => setSelectedTask(task);
     const closeModal = () => setSelectedTask(null);

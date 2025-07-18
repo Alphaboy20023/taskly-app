@@ -41,11 +41,14 @@ export const registerUser = createAsyncThunk(
       const data = await response.json();
 
       if (!response.ok) {
-         return thunkAPI.rejectWithValue(data.message || 'Registration failed') 
+        return thunkAPI.rejectWithValue(data.message || 'Registration failed')
       };
       return data.user;
-    } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        return thunkAPI.rejectWithValue(err.message);
+      }
+      return thunkAPI.rejectWithValue('An unknown error occurred');
     }
   }
 );
@@ -56,7 +59,7 @@ export const loginUser = createAsyncThunk(
   'auth/login',
   async (credentials: { email: string; password: string }, thunkAPI) => {
     try {
-      
+
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -67,8 +70,11 @@ export const loginUser = createAsyncThunk(
       const data = await res.json();
       console.log("Login API response:", data);
       return data.user;
-    } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.message)
+    } catch (err) {
+      if (err instanceof Error) {
+        return thunkAPI.rejectWithValue(err.message);
+      }
+      return thunkAPI.rejectWithValue('An unknown error occurred');
     }
   }
 )
@@ -92,8 +98,11 @@ export const googleLogin = createAsyncThunk(
       localStorage.setItem('kleistic_user', JSON.stringify(payload))
 
       return payload
-    } catch (error: any) {
-      return thunkAPI.rejectWithValue(error.message || 'Google login failed')
+    } catch (err) {
+      if (err instanceof Error) {
+        return thunkAPI.rejectWithValue(err.message);
+      }
+      return thunkAPI.rejectWithValue('An unknown error occurred');
     }
   }
 )
@@ -102,7 +111,7 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setUser: (state, action) => {
+    setUser: (state, action: {payload:User}) => {
       state.user = action.payload;
     },
     logout: (state) => {
@@ -120,7 +129,6 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false
         state.user = action.payload
-        // localStorage.setItem('user', JSON.stringify(action.payload));
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false
@@ -148,7 +156,7 @@ const authSlice = createSlice({
       })
       .addCase(googleLogin.fulfilled, (state, action) => {
         state.loading = false
-        // @ts-ignore
+        // @ts-expect-error action.payload is possibly not correctly typed
         state.user = action.payload
       })
       .addCase(googleLogin.rejected, (state, action) => {

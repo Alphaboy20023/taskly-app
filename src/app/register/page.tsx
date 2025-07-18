@@ -2,12 +2,13 @@
 'use client'
 import { FcGoogle } from "react-icons/fc";
 import { useDispatch, useSelector } from 'react-redux';
-import { registerUser, googleLogin, setUser } from '../redux/authSlice'
+import { registerUser, googleLogin } from '../redux/authSlice'
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation'
 import { toast } from "react-toastify";
 import Link from "next/link";
 import type { RootState } from '../redux/store';
+import { AppDispatch } from '../redux/store';
 
 
 const SignUp = () => {
@@ -19,7 +20,7 @@ const SignUp = () => {
 
 
 
-    const dispatch = useDispatch()
+    const dispatch = useDispatch<AppDispatch>();
     const {  user } = useSelector((state: RootState) => state.auth)
 
 
@@ -31,7 +32,7 @@ const SignUp = () => {
 
         setSignUpType('normal');
 
-        const resultAction = await dispatch(registerUser({ username, email, password }) as any);
+        const resultAction = await dispatch(registerUser({ username, email, password }));
 
         if (registerUser.rejected.match(resultAction)) {
             toast.error(resultAction.payload as string); // backend message
@@ -42,7 +43,7 @@ const SignUp = () => {
 
     const handleGoogleSignUp = async () => {
         setSignUpType('google');
-        const resultAction = await dispatch(googleLogin() as any);
+        const resultAction = await dispatch(googleLogin());
 
         if (googleLogin.fulfilled.match(resultAction)) {
             console.log('User:', resultAction.payload);
