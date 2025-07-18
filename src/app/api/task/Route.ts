@@ -12,16 +12,11 @@ const taskSchema = new mongoose.Schema({
 const Task = mongoose.models.Task || mongoose.model("Task", taskSchema);
 
 // GET all tasks
-// export async function GET() {
-//   await connectDB();
-//   const tasks = await Task.find().sort({ scheduledAt: 1 });
-//   return NextResponse.json(tasks);
-// }
-
 export async function GET() {
-  return new Response("It works!", { status: 200 });
+  await connectDB();
+  const tasks = await Task.find().sort({ scheduledAt: 1 });
+  return NextResponse.json(tasks);
 }
-
 
 // POST task
 export async function POST(req: NextRequest) {
