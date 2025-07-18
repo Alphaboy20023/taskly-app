@@ -80,7 +80,7 @@ const SettingsModal = ({ onClose, handleLogout }: SettingsModalProps) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
-      <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md relative">
+      <div className="bg-white rounded-2xl shadow-lg p-6 w-[95%] max-w-md relative">
         <h2 className="text-xl font-semibold mb-4">My Settings</h2>
 
         <div className="space-y-4">
