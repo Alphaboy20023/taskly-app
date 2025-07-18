@@ -21,7 +21,6 @@ type Props = {
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
 };
 
-
 type StoredUser = {
   uid: string;
   email?: string;
@@ -37,16 +36,23 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
   const [user, setUser] = useState<User | StoredUser | null>(null);
   const router = useRouter();
 
- 
+  // Helper: get id token safely
   const getToken = async () => {
     if (!user) return null;
-
-    
     if ('getIdToken' in user && typeof user.getIdToken === 'function') {
       return await user.getIdToken();
     }
-
     return null;
+  };
+
+  // Safe parse JSON helper
+  const safeParseJSON = async (res: Response) => {
+    const text = await res.text();
+    try {
+      return text ? JSON.parse(text) : null;
+    } catch {
+      return null;
+    }
   };
 
   const fetchTasks = useCallback(async () => {
@@ -64,9 +70,7 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
         },
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to fetch tasks');
-      }
+      if (!res.ok) throw new Error('Failed to fetch tasks');
 
       const data = await res.json();
       setTasks(data);
@@ -82,7 +86,6 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
       if (firebaseUser) {
         setUser(firebaseUser);
       } else {
-        
         const storedUserJSON = localStorage.getItem('taskly_user');
         const storedToken = localStorage.getItem('taskly_token');
         if (storedUserJSON && storedToken) {
@@ -96,7 +99,6 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
           setTasks([]);
         }
       }
-
       await fetchTasks();
     });
 
@@ -142,10 +144,10 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
         body: JSON.stringify(taskData),
       });
 
-      const resBody = await res.json();
+      const resBody = await safeParseJSON(res);
 
       if (!res.ok) {
-        throw new Error(resBody.error || 'Server error');
+        throw new Error(resBody?.error || 'Server error');
       }
 
       setTasks((prev) => [...prev, resBody]);
