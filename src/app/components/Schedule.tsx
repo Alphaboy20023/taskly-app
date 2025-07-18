@@ -38,7 +38,7 @@ const SchedulePage = () => {
                 setErrorMessage(null);
             } catch (error) {
                 console.error("Error fetching tasks:", error);
-                setErrorMessage('An unexpected error occured');
+                // setErrorMessage('An unexpected error occured');
             }
         };
 

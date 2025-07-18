@@ -34,7 +34,6 @@ const TaskCard = () => {
       setTasks(data);
     } catch (error) {
       console.error('Error fetching tasks:', error);
-      toast.error('Could not load tasks.');
     }
   }, []);
 
