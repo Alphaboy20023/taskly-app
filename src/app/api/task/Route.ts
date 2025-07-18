@@ -2,41 +2,39 @@ import connectDB from "app/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { getAuth } from "firebase-admin/auth";
-import * as admin from 'firebase-admin'; 
+import * as admin from 'firebase-admin';
 
-let firebaseAdminApp: admin.app.App | null = null;
+// Initialize Firebase Admin SDK once globally, but safely
+let firebaseAdminAppInitialized = false;
 
-function initializeFirebaseAdminApp(): admin.app.App {
-  if (firebaseAdminApp && admin.apps.length > 0) {
-    return firebaseAdminApp;
-  }
-
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-  if (!projectId || !clientEmail || !privateKey) {
-    console.error("Firebase Admin SDK initialization failed: Missing one or more required environment variables.");
-    console.error("Please ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set in your .env.local file.");
-    throw new Error("Firebase Admin SDK credentials missing. Cannot initialize.");
-  }
-
+if (!admin.apps.length) {
   try {
-    firebaseAdminApp = admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: projectId,
-        clientEmail: clientEmail,
-        privateKey: privateKey,
-      }),
-    });
-    console.log("Firebase Admin SDK initialized successfully.");
-    return firebaseAdminApp;
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+    if (!projectId || !clientEmail || !privateKey) {
+      console.error("Firebase Admin SDK initialization failed: Missing one or more required environment variables.");
+    
+    } else {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: projectId,
+          clientEmail: clientEmail,
+          privateKey: privateKey,
+        }),
+      });
+      console.log("Firebase Admin SDK initialized successfully (global).");
+      firebaseAdminAppInitialized = true;
+    }
   } catch (error: unknown) {
-    console.error("Firebase Admin SDK initialization error:", error);
-    firebaseAdminApp = null;
-    throw error;
+    console.error("Firebase Admin SDK global initialization error:", error);
+    
   }
+} else {
+  firebaseAdminAppInitialized = true; 
 }
+
 
 const taskSchema = new mongoose.Schema({
   title: String,
@@ -51,7 +49,10 @@ const taskSchema = new mongoose.Schema({
 const Task = mongoose.models.Task || mongoose.model("Task", taskSchema);
 
 async function verifyToken(req: NextRequest) {
-  initializeFirebaseAdminApp();
+  if (!firebaseAdminAppInitialized || !admin.apps.length) {
+    console.error("Firebase Admin SDK not initialized when verifyToken was called.");
+    throw new Error("Firebase Admin SDK not ready. Check server logs for credential errors.");
+  }
 
   const authHeader = req.headers.get("Authorization") || "";
   if (!authHeader.startsWith("Bearer ")) {
@@ -62,9 +63,9 @@ async function verifyToken(req: NextRequest) {
   try {
     const decoded = await getAuth().verifyIdToken(token);
     return decoded.uid;
-  } catch (error: unknown) { 
+  } catch (error: unknown) {
     console.error("Firebase ID token verification failed:", error);
-    if (error instanceof Error) { 
+    if (error instanceof Error) {
       throw new Error(`Invalid or expired token: ${error.message}`);
     }
     throw new Error("Invalid or expired token");
@@ -73,25 +74,25 @@ async function verifyToken(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    await connectDB(); 
-    const userId = await verifyToken(req); 
+    await connectDB();
+    const userId = await verifyToken(req);
 
     const tasks = await Task.find({ userId }).sort({ scheduledAt: 1 });
     return NextResponse.json(tasks);
-  } catch (error: unknown) { 
+  } catch (error: unknown) {
     console.error("GET error:", error);
     let errorMessage = "Unauthorized";
-    if (error instanceof Error) { 
+    if (error instanceof Error) {
       errorMessage = error.message;
     }
-    return NextResponse.json({ error: errorMessage }, { status: errorMessage.includes("token") || errorMessage.includes("Authorization") ? 401 : 500 });
+    return NextResponse.json({ error: errorMessage }, { status: errorMessage.includes("token") || errorMessage.includes("Authorization") || errorMessage.includes("SDK not ready") ? 401 : 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    await connectDB(); 
-    const userId = await verifyToken(req); 
+    await connectDB();
+    const userId = await verifyToken(req);
 
     const { title, description, scheduledAt } = await req.json();
 
@@ -107,23 +108,23 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(newTask, { status: 201 });
-  } catch (error: unknown) { 
+  } catch (error: unknown) {
     console.error("POST error:", error);
     let errorMessage = "Server error";
-    if (error instanceof Error) { 
+    if (error instanceof Error) {
       errorMessage = error.message;
     }
-    return NextResponse.json({ error: errorMessage }, { status: errorMessage.includes("token") || errorMessage.includes("Authorization") ? 401 : 500 });
+    return NextResponse.json({ error: errorMessage }, { status: errorMessage.includes("token") || errorMessage.includes("Authorization") || errorMessage.includes("SDK not ready") ? 401 : 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
   try {
-    await connectDB(); 
-    const userId = await verifyToken(req); 
+    await connectDB();
+    const userId = await verifyToken(req);
 
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id"); 
+    const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "Missing task ID" }, { status: 400 });
 
     const deleted = await Task.findOneAndDelete({ _id: id, userId });
@@ -132,23 +133,23 @@ export async function DELETE(req: NextRequest) {
     }
 
     return NextResponse.json({ message: "Task deleted successfully" }, { status: 200 });
-  } catch (error: unknown) { 
+  } catch (error: unknown) {
     console.error("DELETE error:", error);
     let errorMessage = "Server error";
-    if (error instanceof Error) { 
+    if (error instanceof Error) {
       errorMessage = error.message;
     }
-    return NextResponse.json({ error: errorMessage }, { status: errorMessage.includes("token") || errorMessage.includes("Authorization") ? 401 : 500 });
+    return NextResponse.json({ error: errorMessage }, { status: errorMessage.includes("token") || errorMessage.includes("Authorization") || errorMessage.includes("SDK not ready") ? 401 : 500 });
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
-    await connectDB(); 
+    await connectDB();
     const userId = await verifyToken(req);
 
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id"); 
+    const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "Missing task ID" }, { status: 400 });
 
     const { title, description, scheduledAt } = await req.json();
@@ -159,7 +160,7 @@ export async function PUT(req: NextRequest) {
     const updatedTask = await Task.findOneAndUpdate(
       { _id: id, userId },
       { title, description, scheduledAt },
-      { new: true } 
+      { new: true }
     );
 
     if (!updatedTask) {
@@ -167,12 +168,12 @@ export async function PUT(req: NextRequest) {
     }
 
     return NextResponse.json(updatedTask, { status: 200 });
-  } catch (error: unknown) { 
+  } catch (error: unknown) {
     console.error("PUT error:", error);
     let errorMessage = "Server error";
-    if (error instanceof Error) { 
+    if (error instanceof Error) {
       errorMessage = error.message;
     }
-    return NextResponse.json({ error: errorMessage }, { status: errorMessage.includes("token") || errorMessage.includes("Authorization") ? 401 : 500 });
+    return NextResponse.json({ error: errorMessage }, { status: errorMessage.includes("token") || errorMessage.includes("Authorization") || errorMessage.includes("SDK not ready") ? 401 : 500 });
   }
 }
