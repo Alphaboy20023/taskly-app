@@ -29,12 +29,24 @@ const Delete = ({ taskId, setTasks }: DeleteProps) => {
     return () => unsubscribe();
   }, []);
 
+
   const handleDeleteTask = async () => {
-
-
     try {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+
+      if (!currentUser) {
+        toast.error("User not authenticated");
+        return;
+      }
+
+      const token = await currentUser.getIdToken();
+
       const res = await fetch(`/api/task?id=${taskId}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await res.json();
@@ -56,6 +68,7 @@ const Delete = ({ taskId, setTasks }: DeleteProps) => {
       }
     }
   };
+
 
   return (
     <>

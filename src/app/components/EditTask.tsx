@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { getAuth } from 'firebase/auth';
 
 type Task = {
   _id: string;
@@ -22,27 +23,38 @@ const EditTask = ({ task, setTasks }: Props) => {
   const [scheduledAt, setScheduledAt] = useState(task.scheduledAt);
 
   const handleUpdate = async () => {
-    try {
-      const res = await fetch(`/api/task?id=${task._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title, scheduledAt, description }),
-      });
+  try {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
 
-      if (!res.ok) throw new Error('Failed to update');
-
-      const updated = await res.json();
-      setTasks((prev) =>
-        prev.map((t) => (t._id === updated._id ? updated : t))
-      );
-      toast.success('Task updated!');
-      setShow(false);
-    } catch {
-      toast.error('Update failed');
+    if (!currentUser) {
+      toast.error("You must be logged in");
+      return;
     }
-  };
+
+    const token = await currentUser.getIdToken();
+
+    const res = await fetch(`/api/task?id=${task._id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ title, scheduledAt, description }),
+    });
+
+    if (!res.ok) throw new Error('Failed to update');
+
+    const updated = await res.json();
+    setTasks((prev) =>
+      prev.map((t) => (t._id === updated._id ? updated : t))
+    );
+    toast.success('Task updated!');
+    setShow(false);
+  } catch (err) {
+    toast.error('Update failed');
+  }
+};
 
   return (
     <>

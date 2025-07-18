@@ -6,6 +6,10 @@ const TaskSchema = new mongoose.Schema(
     title: { type: String, required: true },
     description: String,
     scheduledAt: { type: Date, required: true },
+    userId: {
+      type: String, 
+      required: true,
+    },
     status: {
       type: String,
       enum: ["Scheduled", "Completed", "Missed"],
