@@ -99,7 +99,12 @@ const TaskCard = ({ tasks, setTasks }: Props) => {
         body: JSON.stringify(taskData),
       });
 
-      if (!res.ok) throw new Error('Server error');
+      const resBody = await res.json();
+
+      if (!res.ok) {
+        console.error("❌ Server Error Details:", resBody);
+        throw new Error(resBody.error || 'Server error');
+      }
 
       const savedTask = await res.json();
       setTasks((prev) => [...prev, savedTask]);

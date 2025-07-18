@@ -36,23 +36,32 @@ export async function GET(req: NextRequest) {
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const body = await req.json();
 
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace("Bearer ", "");
     const decoded = await getAuth().verifyIdToken(token);
     const userId = decoded.uid;
 
+    const { title, description, scheduledAt } = await req.json();
+
+    if (!title || !scheduledAt) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+
     const newTask = await Task.create({
-      ...body,
-      userId,
+      title,
+      description,
+      scheduledAt,
+      userId, 
     });
 
     return NextResponse.json(newTask, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: "Unauthorized or server error" }, { status: 401 });
+  } catch (err) {
+    console.error("POST error:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+
 
 // DELETE
 export async function DELETE(req: Request) {
@@ -102,7 +111,7 @@ export async function PUT(req: Request) {
     }
 
     const updatedTask = await Task.findOneAndUpdate(
-      { _id: id, userId }, // 🔐 Ensure only owner can update
+      { _id: id, userId }, 
       { title, description, scheduledAt },
       { new: true }
     );
