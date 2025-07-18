@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { toast } from "react-toastify";
 
 const API_KEY = 'd0da849ff0de7483a1f636999fe0c9ef';
 const CITY = "Lagos";

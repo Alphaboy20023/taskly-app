@@ -1,5 +1,6 @@
 
-'use client'
+'use client';
+
 import { FcGoogle } from "react-icons/fc";
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser, googleLogin } from '../redux/authSlice'

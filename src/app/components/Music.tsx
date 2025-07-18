@@ -1,5 +1,4 @@
-"use client";
-
+'use client';
 import { useEffect, useState, useRef } from "react";
 import {
   FaPlay,
@@ -23,7 +22,7 @@ const MusicCard = () => {
   const [shuffle, setShuffle] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  // const [openIndex, setOpenIndex] = useState<number | null>(null);
+
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const currentTrack = tracks[currentTrackIndex];

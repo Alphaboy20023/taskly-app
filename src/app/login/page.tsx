@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { loginUser } from "app/redux/authSlice";
 import { useRouter } from 'next/navigation';
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
 const Login = () => {
     const [email, setEmail] = useState('');

@@ -1,5 +1,6 @@
-"use client";
-import { useEffect, useState } from "react";
+'use client';
+
+import { useEffect, useMemo, useState } from "react";
 import TaskDetailModal from "./TaskDetailModal";
 import Image from "next/image";
 import { toast } from "react-toastify";
@@ -17,8 +18,11 @@ const SchedulePage = () => {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // ensure comparison is by day only
+    const today = useMemo(() => {
+        const date = new Date();
+        date.setHours(0, 0, 0, 0);
+        return date;
+    }, []);
 
     useEffect(() => {
         const fetchTasks = async () => {
@@ -58,9 +62,12 @@ const SchedulePage = () => {
         return date > today;
     });
 
-    if (errorMessage) {
-        toast.error(errorMessage)
-    }
+    useEffect(() => {
+        if (errorMessage) {
+            toast.error(errorMessage);
+        }
+    }, [errorMessage]);
+
 
     return (
         <div className="p-4 w-full">

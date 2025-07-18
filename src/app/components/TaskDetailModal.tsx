@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { Task } from "./Schedule"; 
 
 type Props = {
