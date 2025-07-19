@@ -85,8 +85,19 @@ const Home = () => {
       });
 
       if (!res.ok) {
-        const error = await res.json().catch(() => ({}));
-        throw new Error(error.message || 'Failed to add task');
+        let errorMsg = 'Failed to add task';
+
+        try {
+          const contentType = res.headers.get('Content-Type');
+          if (contentType && contentType.includes('application/json')) {
+            const error = await res.json();
+            errorMsg = error.message || errorMsg;
+          }
+        } catch (_) {
+          
+        }
+
+        throw new Error(errorMsg);
       }
 
       console.log('Error status:', res.status);
