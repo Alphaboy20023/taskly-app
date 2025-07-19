@@ -61,14 +61,14 @@ const Home = () => {
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({}));
-        throw new Error(error.message || 'Failed to fetch tasks');
+        throw new Error(error.message || 'Failed to fetch task');
       }
 
       const data = await res.json();
       setTasks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching tasks:", error);
-      toast.error("Failed to load tasks");
+      console.error("Failed to load tasks");
     }
   };
 
@@ -89,6 +89,11 @@ const Home = () => {
         throw new Error(error.message || 'Failed to add task');
       }
 
+      console.log('Error status:', res.status);
+      console.log('Error content-type:', res.headers.get('Content-Type'));
+      console.log('Error body text:', await res.text());
+
+
       const newTask = await res.json();
       setTasks(prev => [...prev, newTask]);
       return newTask;
@@ -101,7 +106,7 @@ const Home = () => {
 
   useEffect(() => {
     if (user) {
-     void fetchTasks();
+      void fetchTasks();
     }
   }, [user]);
 
