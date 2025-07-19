@@ -97,7 +97,7 @@ export default function TaskManager({ children }: TaskManagerProps) {
     } catch (error) {
       console.error("Task fetch error:", error);
       setTasks([]);
-      toast.error(error instanceof Error ? error.message : 'Failed to load tasks');
+      console.error(error instanceof Error ? error.message : 'Failed to load tasks');
     }
   }, [user, getAuthToken]);
 
