@@ -18,7 +18,7 @@ export default function UserProfile() {
     localStorage.removeItem('taskly_user')
     if (user?.authMethod && user.authMethod !== 'local') await signOut(auth)
     setUser(null)
-    window.location.href = '/login'
+    window.location.href = '/'
   }
 
   const avatarUrl = useMemo(() => {

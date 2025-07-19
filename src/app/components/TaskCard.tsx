@@ -1,13 +1,11 @@
+// components/TaskCard.tsx
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import EditTask from './EditTask';
 import TaskCardCalendar from './TaskCardCalendar';
-import { useUser } from '../context/UserProvider';
 import Delete from './DeleteTask';
-import { User as FirebaseUser } from "firebase/auth";
-
 
 type Task = {
   _id: string;
@@ -16,88 +14,20 @@ type Task = {
   scheduledAt: string;
 };
 
-type Props = Record<string, never>;
+type TaskCardProps = {
+  tasks?: Task[];
+  handleAddTask: (taskData: Omit<Task, '_id'>) => Promise<void>;
+  setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
+};
 
-const TaskCard = ({ }: Props) => {
-  const { user } = useUser(); // ✅ Added
-  const [tasks, setTasks] = useState<Task[]>([]);
+const TaskCard = ({ tasks = [], handleAddTask, setTasks }: TaskCardProps) => {
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newScheduledAt, setNewScheduledAt] = useState<string>('');
   const [showCalendar, setShowCalendar] = useState(false);
 
-  const safeParseJSON = async (res: Response) => {
-    const text = await res.text();
-    try {
-      return text ? JSON.parse(text) : null;
-    } catch (e) {
-      console.error('safeParseJSON: Failed to parse JSON response:', e, 'Response text:', text);
-      return null;
-    }
-  };
-
-  const fetchTasks = useCallback(async () => {
-
-    if (!user) {
-      console.warn("TaskCard: No user found, skipping task fetch.");
-      return;
-    }
-    try {
-      const res = await fetch('/api/task', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('taskly_token') || ''}`,
-        },
-        cache: 'no-store',
-      });
-
-
-      if (!res.ok) {
-        const errorBody = await safeParseJSON(res);
-        console.error("fetchTasks: API response not OK. Status:", res.status, "Error Body:", errorBody);
-        throw new Error(errorBody?.error || `Failed to fetch tasks with status: ${res.status}`);
-      }
-
-      const data = await res.json();
-      if (!Array.isArray(data)) {
-        console.error("fetchTasks: API did not return an array of tasks:", data);
-        setTasks([]);
-        toast.error("Failed to load tasks due to unexpected data format.");
-        return;
-      }
-      console.log("fetchTasks: Successfully fetched tasks. Count:", data.length);
-      setTasks(data);
-    } catch (error) {
-      console.error('fetchTasks: Error fetching tasks:', error);
-      setTasks([]);
-      console.error('Failed to load tasks.');
-    }
-  }, [setTasks, user]);
-
-
-
-  useEffect(() => {
-    console.log("useEffect: Calling fetchTasks on component mount.");
-    fetchTasks();
-  }, [fetchTasks]);
-
-
-
-  useEffect(() => {
-    console.log("useEffect [tasks-updated]: Setting up custom event listener.");
-    const handleUpdate = () => {
-      console.log("tasks-updated event received. Re-fetching tasks.");
-      fetchTasks();
-    };
-    window.addEventListener("tasks-updated", handleUpdate);
-    return () => {
-      console.log("useEffect [tasks-updated]: Cleaning up custom event listener.");
-      window.removeEventListener("tasks-updated", handleUpdate);
-    };
-  }, [fetchTasks]);
-
-
-  const handleAddTask = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const scheduledTime = new Date(newScheduledAt);
@@ -106,107 +36,61 @@ const TaskCard = ({ }: Props) => {
       return;
     }
 
-    const taskData = {
-      title: newTitle,
-      description: newDescription,
-      scheduledAt: newScheduledAt,
-    };
-
     try {
-      if (!user) throw new Error("User not authenticated");
-
-      const authType = localStorage.getItem('taskly_auth_type');
-      let token = localStorage.getItem('taskly_token');
-
-      // Get a fresh Firebase token if applicable
-      if (authType === 'firebase') {
-        const isFirebaseUser = (user: any): user is FirebaseUser => {
-          return (
-            typeof user === "object" &&
-            user !== null &&
-            "getIdToken" in user &&
-            typeof user.getIdToken === "function"
-          );
-        };
-
-        if (isFirebaseUser(user)) {
-          token = await user.getIdToken(); // Fresh token
-          localStorage.setItem('taskly_token', token); // Optional: update cache
-        } else {
-          throw new Error("Expected Firebase user but got something else");
-        }
-      }
-
-      if (!token) throw new Error("No token found");
-
-      const res = await fetch('/api/task', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(taskData),
+      await handleAddTask({
+        title: newTitle,
+        description: newDescription,
+        scheduledAt: newScheduledAt,
       });
-
-      const resBody = await res.json();
-
-      if (!res.ok) {
-        console.error("API Error", res.status, resBody);
-        throw new Error(resBody?.error || 'Server error');
-      }
-
-      setTasks((prev) => [...prev, resBody]);
-      window.dispatchEvent(new Event('tasks-updated'));
-      toast.success('Task created!');
       setShowModal(false);
       setNewTitle('');
       setNewDescription('');
       setNewScheduledAt('');
-    } catch (error: any) {
-      toast.error(`An error occurred: ${error.message}`);
-      console.error("handleAddTask error:", error.message);
+    } catch (error) {
+      // Error is already handled in handleAddTask
     }
   };
 
-
-
-  const handleOpenModal = () => {
-    console.log("handleOpenModal: Called.");
-    setShowModal(true);
-  };
+  const handleOpenModal = () => setShowModal(true);
 
   return (
     <>
-      {tasks.map((task) => (
-        <div
-          key={task._id}
-          className="flex justify-between items-start gap-4 p-4 rounded-lg shadow-md bg-white border border-gray-200 mb-4"
-        >
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-800">{task.title}</h3>
-            <p className="text-md text-black mb-1">
-              {task.scheduledAt
-                ? new Date(task.scheduledAt).toLocaleString('en-US', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true,
-                })
-                : 'No scheduled date'}
-            </p>
-            <p className="text-sm text-gray-700 mb-2">{task.description}</p>
-            <span className="inline-block text-xs px-2 py-1 rounded-full font-semibold bg-yellow-100 text-yellow-700 mb-3">
-              Scheduled
-            </span>
-            <div className="flex gap-3 mt-2">
-              <EditTask task={task} setTasks={setTasks} />
-              <Delete taskId={task._id} setTasks={setTasks} />
+      {tasks.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          No tasks found. Add your first task!
+        </div>
+      ) : (
+        tasks.map((task) => (
+          <div
+            key={task._id}
+            className="flex justify-between items-start gap-4 p-4 rounded-lg shadow-md bg-white border border-gray-200 mb-4"
+          >
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-800">{task.title}</h3>
+              <p className="text-md text-black mb-1">
+                {task.scheduledAt
+                  ? new Date(task.scheduledAt).toLocaleString('en-US', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })
+                  : 'No scheduled date'}
+              </p>
+              <p className="text-sm text-gray-700 mb-2">{task.description}</p>
+              <span className="inline-block text-xs px-2 py-1 rounded-full font-semibold bg-yellow-100 text-yellow-700 mb-3">
+                Scheduled
+              </span>
+              <div className="flex gap-3 mt-2">
+                <EditTask task={task} setTasks={setTasks} />
+                <Delete taskId={task._id} setTasks={setTasks} />
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
 
       <div
         onClick={handleOpenModal}
@@ -228,7 +112,7 @@ const TaskCard = ({ }: Props) => {
 
             <h2 className="text-xl font-semibold mb-4">Create Task</h2>
 
-            <form onSubmit={handleAddTask}>
+            <form onSubmit={handleSubmit}>
               <input
                 type="text"
                 placeholder="Title"
