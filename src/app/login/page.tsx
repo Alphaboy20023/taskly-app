@@ -27,22 +27,52 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const token = await userCredential.user.getIdToken();
+            let token: string = '';
+            let user: any;
 
+            // 1. Try Firebase login
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                token = await userCredential.user.getIdToken();
+                user = {
+                    uid: userCredential.user.uid,
+                    email: userCredential.user.email,
+                    name: userCredential.user.displayName,
+                    photo: userCredential.user.photoURL,
+                    provider: 'firebase'
+                };
 
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ email })
-            });
+                // Send token to Firebase backend route for optional user sync/validation
+                const res = await fetch('/api/auth/firebase', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(user)
+                });
 
-            if (!res.ok) throw new Error(await res.text());
+                if (!res.ok) throw new Error("Firebase user not accepted");
 
+            } catch (firebaseErr) {
+                // 2. If Firebase login fails, try local login instead
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                if (!res.ok) throw new Error(await res.text());
+
+                const data = await res.json();
+                token = data.token;
+                user = data.user;
+                user.provider = 'local';
+            }
+
+            // Store token and user
             localStorage.setItem('taskly_token', token);
+            localStorage.setItem('taskly_user', JSON.stringify(user));
             toast.success("Login successful!");
             router.push('/');
 
@@ -56,6 +86,7 @@ const Login = () => {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="flex justify-center flex-col items-center h-[100vh]">

@@ -1,171 +1,169 @@
-import connectDB from "app/lib/db";
 import { NextRequest, NextResponse } from "next/server";
+import connectDB from "app/lib/db";
 import mongoose from "mongoose";
+import * as admin from "firebase-admin";
+import jwt from "jsonwebtoken";
 import { getAuth } from "firebase-admin/auth";
-import * as admin from 'firebase-admin'; 
+import { adminAuth } from "app/lib/firebase-admin";
+import { User } from "app/models/User";
 
-// Initialize Firebase Admin SDK once globally, but safely
-let firebaseAdminAppInitialized = false;
-
+// --- Firebase Admin Initialization ---
 if (!admin.apps.length) {
-  try {
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const { FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY } = process.env;
 
-    if (!projectId || !clientEmail || !privateKey) {
-      console.error("Firebase Admin SDK initialization failed: Missing one or more required environment variables.");
-    } else {
+  if (FIREBASE_PROJECT_ID && FIREBASE_CLIENT_EMAIL && FIREBASE_PRIVATE_KEY) {
+    try {
       admin.initializeApp({
         credential: admin.credential.cert({
-          projectId: projectId,
-          clientEmail: clientEmail,
-          privateKey: privateKey,
+          projectId: FIREBASE_PROJECT_ID,
+          clientEmail: FIREBASE_CLIENT_EMAIL,
+          privateKey: FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
         }),
       });
-      console.log("Firebase Admin SDK initialized successfully (global).");
-      firebaseAdminAppInitialized = true;
+      console.log("✅ Firebase Admin initialized.");
+    } catch (err) {
+      console.error("❌ Firebase Admin init error:", err);
     }
-  } catch (error: unknown) { 
-    console.error("Firebase Admin SDK global initialization error:", error);
+  } else {
+    console.warn("⚠️ Missing Firebase Admin env variables");
   }
-} else {
-  firebaseAdminAppInitialized = true;
 }
 
-
+// --- Task Schema ---
 const taskSchema = new mongoose.Schema({
-  title: String,
+  title: { type: String, required: true },
   description: String,
-  scheduledAt: Date,
-  userId: {
-    type: String,
-    required: true,
-  },
+  scheduledAt: { type: Date, required: true },
+  userId: { type: String, required: true },
 }, { timestamps: true });
 
 const Task = mongoose.models.Task || mongoose.model("Task", taskSchema);
 
-async function verifyToken(req: NextRequest) {
-  if (!firebaseAdminAppInitialized || !admin.apps.length) {
-    throw new Error("Firebase Admin SDK not ready. Check server logs for credential errors.");
+// --- Auth Token Verifier ---
+const verifyToken = async (req: NextRequest): Promise<string> => {
+  const authHeader = req.headers.get("Authorization") || "";
+  if (!authHeader.startsWith("Bearer ")) throw new Error("Missing or invalid Authorization header");
+
+  const token = authHeader.replace("Bearer ", "");
+
+  // Firebase auth
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    return decoded.uid;
+  } catch {
+    console.log("⚠️ Firebase token failed. Falling back to local JWT.");
   }
 
-  const authHeader = req.headers.get("Authorization") || "";
-  if (!authHeader.startsWith("Bearer ")) {
-    throw new Error("Missing or invalid Authorization header");
-  }
-  const token = authHeader.replace("Bearer ", "");
+  // Local JWT fallback
   try {
-    const decoded = await getAuth().verifyIdToken(token);
-    return decoded.uid;
-  } catch (error: unknown) { 
-    if (error instanceof Error) { 
-      throw new Error(`Invalid or expired token: ${error.message}`);
-    }
+    const decoded = jwt.verify(token, process.env.LOCAL_JWT_SECRET!) as { userId: string };
+    return decoded.userId;
+  } catch {
     throw new Error("Invalid or expired token");
   }
-}
+};
 
+// --- GET All Tasks ---
 export async function GET(req: NextRequest) {
   try {
-    await connectDB(); 
-    const userId = await verifyToken(req); 
+    await connectDB();
+    const userId = await verifyToken(req);
 
     const tasks = await Task.find({ userId }).sort({ scheduledAt: 1 });
     return NextResponse.json(tasks);
-  } catch (error: unknown) { 
-    let errorMessage = "Unauthorized";
-    if (error instanceof Error) { 
-      errorMessage = error.message;
-    }
-    return NextResponse.json({ error: errorMessage }, { status: errorMessage.includes("token") || errorMessage.includes("Authorization") || errorMessage.includes("SDK not ready") ? 401 : 500 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: msg }, { status: /token|auth/i.test(msg) ? 401 : 500 });
   }
 }
 
-// POST
-export async function POST(req: NextRequest) { 
+// --- POST New Task ---
+export async function POST(req: NextRequest) {
   try {
-    await connectDB(); 
-    const userId = await verifyToken(req); 
-
+    await connectDB();
+    const userId = await verifyToken(req);
     const { title, description, scheduledAt } = await req.json();
 
     if (!title || !scheduledAt) {
-      return NextResponse.json({ error: "Missing required fields: title and scheduledAt" }, { status: 400 });
+      return NextResponse.json({ error: "Title and scheduledAt are required" }, { status: 400 });
     }
 
     const newTask = await Task.create({
       title,
       description,
-      scheduledAt,
+      scheduledAt: new Date(scheduledAt),
       userId,
     });
 
     return NextResponse.json(newTask, { status: 201 });
-  } catch (error: unknown) { 
-    let errorMessage = "Server error";
-    if (error instanceof Error) { 
-      errorMessage = error.message;
-    }
-    return NextResponse.json({ error: errorMessage }, { status: errorMessage.includes("token") || errorMessage.includes("Authorization") || errorMessage.includes("SDK not ready") ? 401 : 500 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: msg }, { status: /token|auth/i.test(msg) ? 401 : 500 });
   }
 }
 
+
+// --- DELETE Task ---
 export async function DELETE(req: NextRequest) {
   try {
-    await connectDB(); 
-    const userId = await verifyToken(req); 
-
+    await connectDB();
+    const user = await verifyToken(req); 
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id"); 
-    if (!id) return NextResponse.json({ error: "Missing task ID" }, { status: 400 });
+    const taskId = searchParams.get("id");
 
-    const deleted = await Task.findOneAndDelete({ _id: id, userId });
+    if (!taskId) {
+      return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
+    }
+
+    const deleted = await Task.findByIdAndDelete(taskId);
+
     if (!deleted) {
-      return NextResponse.json({ error: "Task not found or unauthorized to delete" }, { status: 404 });
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ message: "Task deleted successfully" }, { status: 200 });
-  } catch (error: unknown) { 
-    let errorMessage = "Server error";
-    if (error instanceof Error) { 
-      errorMessage = error.message;
-    }
-    return NextResponse.json({ error: errorMessage }, { status: errorMessage.includes("token") || errorMessage.includes("Authorization") || errorMessage.includes("SDK not ready") ? 401 : 500 });
+    return NextResponse.json({ message: "Task deleted successfully" });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: msg }, {
+      status: /token|auth/i.test(msg) ? 401 : 500
+    });
   }
 }
 
+
+// --- PUT Update Task ---
 export async function PUT(req: NextRequest) {
   try {
-    await connectDB(); 
-    const userId = await verifyToken(req);
-
+    await connectDB();
+    const user = await verifyToken(req);  // just verify token, no userId extraction assumed
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id"); 
-    if (!id) return NextResponse.json({ error: "Missing task ID" }, { status: 400 });
-
+    const id = searchParams.get("id");
     const { title, description, scheduledAt } = await req.json();
+
+    if (!id) {
+      return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
+    }
     if (!title || !scheduledAt) {
-      return NextResponse.json({ error: "Missing required fields: title and scheduledAt for update" }, { status: 400 });
+      return NextResponse.json({ error: "Title and scheduledAt are required" }, { status: 400 });
     }
 
-    const updatedTask = await Task.findOneAndUpdate(
-      { _id: id, userId },
+    const updated = await Task.findByIdAndUpdate(
+      id,
       { title, description, scheduledAt },
-      { new: true } 
+      { new: true }
     );
 
-    if (!updatedTask) {
-      return NextResponse.json({ error: "Task not found or unauthorized to update" }, { status: 404 });
+    if (!updated) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    return NextResponse.json(updatedTask, { status: 200 });
-  } catch (error: unknown) { 
-    let errorMessage = "Server error";
-    if (error instanceof Error) { 
-      errorMessage = error.message;
-    }
-    return NextResponse.json({ error: errorMessage }, { status: errorMessage.includes("token") || errorMessage.includes("Authorization") || errorMessage.includes("SDK not ready") ? 401 : 500 });
+    return NextResponse.json(updated);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: msg }, {
+      status: /token|auth/i.test(msg) ? 401 : 500
+    });
   }
 }
+
+

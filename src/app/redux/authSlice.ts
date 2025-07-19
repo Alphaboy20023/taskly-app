@@ -1,11 +1,11 @@
 'use client';
 
 import { auth, googleProvider } from '../lib/firebase';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, User as FirebaseUser } from 'firebase/auth';
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 
 // ---------- Types ----------
-interface User {
+export interface User {
   avatar?: string;
   id: string;
   email: string;
@@ -45,10 +45,12 @@ export const googleLogin = createAsyncThunk<User, void, { rejectValue: string }>
   async (_, thunkAPI) => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const token = await result.user.getIdToken();
-      const email = result.user.email;
-      const name = result.user.displayName;
-      const avatar = result.user.photoURL || '';
+      const firebaseUser: FirebaseUser = result.user;
+
+      const token = await firebaseUser.getIdToken();
+      const email = firebaseUser.email;
+      const name = firebaseUser.displayName;
+      const avatar = firebaseUser.photoURL || '';
 
       if (!email) throw new Error('No email from Google');
 
@@ -63,20 +65,23 @@ export const googleLogin = createAsyncThunk<User, void, { rejectValue: string }>
         throw new Error(error.message || 'Google login failed');
       }
 
-      const { user } = await res.json();
+      const { user }: { user: User } = await res.json();
       setAuthStorage(user, token);
       return user;
     } catch (err) {
       await auth.signOut();
-      return thunkAPI.rejectWithValue(
-        err instanceof Error ? err.message : 'Google login failed'
-      );
+      const errorMsg = err instanceof Error ? err.message : 'Google login failed';
+      return thunkAPI.rejectWithValue(errorMsg);
     }
   }
 );
 
 // 2. Local Login
-export const loginUser = createAsyncThunk<User, { email: string; password: string }, { rejectValue: string }>(
+export const loginUser = createAsyncThunk<
+  User,
+  { email: string; password: string },
+  { rejectValue: string }
+>(
   'auth/login',
   async (credentials, thunkAPI) => {
     try {
@@ -86,23 +91,26 @@ export const loginUser = createAsyncThunk<User, { email: string; password: strin
         body: JSON.stringify(credentials),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
         return thunkAPI.rejectWithValue(data.error || 'Login failed');
       }
 
-      const { user, token } = await res.json();
+      const { user, token }: { user: User; token: string } = data;
 
+     
       if (user.authMethod !== 'local') {
         return thunkAPI.rejectWithValue(`Please login using ${user.authMethod}`);
       }
 
+      // ✅ Store local token
       setAuthStorage(user, token);
+
       return user;
     } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err instanceof Error ? err.message : 'Login failed'
-      );
+      const errorMsg = err instanceof Error ? err.message : 'Login failed';
+      return thunkAPI.rejectWithValue(errorMsg);
     }
   }
 );
@@ -123,13 +131,12 @@ export const registerUser = createAsyncThunk<User, { username: string; email: st
         return thunkAPI.rejectWithValue(text || 'Registration failed');
       }
 
-      const { user, token } = await res.json();
+      const { user, token }: { user: User; token: string } = await res.json();
       setAuthStorage(user, token);
       return user;
     } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err instanceof Error ? err.message : 'Registration failed'
-      );
+      const errorMsg = err instanceof Error ? err.message : 'Registration failed';
+      return thunkAPI.rejectWithValue(errorMsg);
     }
   }
 );
@@ -188,7 +195,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = payload || 'Registration failed';
       });
-  }
+  },
 });
 
 // ---------- Exports ----------

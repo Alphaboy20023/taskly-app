@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from '../../../lib/mongoose';
 import { User } from '../../../models/User';
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export async function POST(req: Request) {
   try {
@@ -14,21 +15,27 @@ export async function POST(req: Request) {
     const user = await User.findOne({ email }).select('+passwordHash');
     if (!user) return NextResponse.json({ error: "Account not found" }, { status: 404 });
 
-    // Handle auth method mismatch
+    // Firebase-only account
     if (user.authMethod === 'firebase') {
       return NextResponse.json({ error: "Use Firebase login" }, { status: 400 });
     }
 
-    // Local auth validation
     if (!password) return NextResponse.json({ error: "Password required" }, { status: 400 });
     if (!user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // Successful login
+    // ✅ Generate local JWT token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.LOCAL_JWT_SECRET!, 
+      { expiresIn: "7d" }
+    );
+
     await User.updateOne({ _id: user._id }, { lastLogin: new Date() });
 
     return NextResponse.json({
+      token,
       user: {
         id: user._id,
         email: user.email,

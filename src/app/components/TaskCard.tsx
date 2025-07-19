@@ -6,6 +6,8 @@ import EditTask from './EditTask';
 import TaskCardCalendar from './TaskCardCalendar';
 import { useUser } from '../context/UserProvider';
 import Delete from './DeleteTask';
+import { User as FirebaseUser } from "firebase/auth";
+
 
 type Task = {
   _id: string;
@@ -36,13 +38,19 @@ const TaskCard = ({ }: Props) => {
   };
 
   const fetchTasks = useCallback(async () => {
-    if (!user) return;
-    console.log("fetchTasks: Fetching tasks without authentication.");
 
+    if (!user) {
+      console.warn("TaskCard: No user found, skipping task fetch.");
+      return;
+    }
     try {
       const res = await fetch('/api/task', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('taskly_token') || ''}`,
+        },
         cache: 'no-store',
       });
+
 
       if (!res.ok) {
         const errorBody = await safeParseJSON(res);
@@ -66,10 +74,14 @@ const TaskCard = ({ }: Props) => {
     }
   }, [setTasks, user]);
 
+
+
   useEffect(() => {
     console.log("useEffect: Calling fetchTasks on component mount.");
     fetchTasks();
   }, [fetchTasks]);
+
+
 
   useEffect(() => {
     console.log("useEffect [tasks-updated]: Setting up custom event listener.");
@@ -83,6 +95,7 @@ const TaskCard = ({ }: Props) => {
       window.removeEventListener("tasks-updated", handleUpdate);
     };
   }, [fetchTasks]);
+
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,8 +113,32 @@ const TaskCard = ({ }: Props) => {
     };
 
     try {
-      // console.log('handleAddTask: Sending task:', taskData);
-      const token = localStorage.getItem('taskly_token')
+      if (!user) throw new Error("User not authenticated");
+
+      const authType = localStorage.getItem('taskly_auth_type');
+      let token = localStorage.getItem('taskly_token');
+
+      // Get a fresh Firebase token if applicable
+      if (authType === 'firebase') {
+        const isFirebaseUser = (user: any): user is FirebaseUser => {
+          return (
+            typeof user === "object" &&
+            user !== null &&
+            "getIdToken" in user &&
+            typeof user.getIdToken === "function"
+          );
+        };
+
+        if (isFirebaseUser(user)) {
+          token = await user.getIdToken(); // Fresh token
+          localStorage.setItem('taskly_token', token); // Optional: update cache
+        } else {
+          throw new Error("Expected Firebase user but got something else");
+        }
+      }
+
+      if (!token) throw new Error("No token found");
+
       const res = await fetch('/api/task', {
         method: 'POST',
         headers: {
@@ -110,11 +147,11 @@ const TaskCard = ({ }: Props) => {
         },
         body: JSON.stringify(taskData),
       });
-      // console.log('Token:', token)
-      const resBody = await safeParseJSON(res);
+
+      const resBody = await res.json();
 
       if (!res.ok) {
-        console.error("handleAddTask: API response not OK. Status:", res.status, "Error Body:", resBody);
+        console.error("API Error", res.status, resBody);
         throw new Error(resBody?.error || 'Server error');
       }
 
@@ -125,16 +162,13 @@ const TaskCard = ({ }: Props) => {
       setNewTitle('');
       setNewDescription('');
       setNewScheduledAt('');
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        toast.error(`An error occurred: ${error.message}`);
-        console.error('handleAddTask: Error:', error.message);
-      } else {
-        toast.error('An unknown error occurred.');
-        console.error('handleAddTask: Unknown error:', error);
-      }
+    } catch (error: any) {
+      toast.error(`An error occurred: ${error.message}`);
+      console.error("handleAddTask error:", error.message);
     }
   };
+
+
 
   const handleOpenModal = () => {
     console.log("handleOpenModal: Called.");
