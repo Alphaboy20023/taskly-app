@@ -6,7 +6,8 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 
 // ---------- Types ----------
 interface User {
-  avatar: string | Blob | undefined;
+  [x: string]: any;
+  avatar?: string;
   id: string;
   email: string;
   username?: string;
@@ -48,6 +49,7 @@ export const googleLogin = createAsyncThunk<User, void, { rejectValue: string }>
       const token = await result.user.getIdToken();
       const email = result.user.email;
       const name = result.user.displayName;
+      const avatar = result.user.photoURL || '';
 
       if (!email) throw new Error('No email from Google');
 
@@ -65,7 +67,6 @@ export const googleLogin = createAsyncThunk<User, void, { rejectValue: string }>
       const { user } = await res.json();
       setAuthStorage(user, token);
       return user;
-
     } catch (err) {
       await auth.signOut();
       return thunkAPI.rejectWithValue(
@@ -99,7 +100,6 @@ export const loginUser = createAsyncThunk<User, { email: string; password: strin
 
       setAuthStorage(user, token);
       return user;
-
     } catch (err) {
       return thunkAPI.rejectWithValue(
         err instanceof Error ? err.message : 'Login failed'
@@ -127,7 +127,6 @@ export const registerUser = createAsyncThunk<User, { username: string; email: st
       const { user, token } = await res.json();
       setAuthStorage(user, token);
       return user;
-
     } catch (err) {
       return thunkAPI.rejectWithValue(
         err instanceof Error ? err.message : 'Registration failed'

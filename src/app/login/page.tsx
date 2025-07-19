@@ -1,4 +1,5 @@
 'use client'
+
 import Link from "next/link";
 import { toast } from "react-toastify";
 import { loginUser } from "app/redux/authSlice";
@@ -15,7 +16,6 @@ const Login = () => {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
-
     const handleLogin = async () => {
         if (!email || !password) {
             toast.error("Please fill in all fields");
@@ -26,12 +26,9 @@ const Login = () => {
 
         try {
             const resultAction = await dispatch(loginUser({ email, password }));
-            const userCredential = unwrapResult(resultAction);
+            const userCredential = unwrapResult(resultAction); 
+            const token = await userCredential.user.getIdToken(); 
 
-            // Get Firebase token from the logged-in user
-            const token = await userCredential.user.getIdToken();
-
-            // sync with backend
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
@@ -43,7 +40,6 @@ const Login = () => {
 
             if (!res.ok) throw new Error(await res.text());
 
-            // Save token locally
             localStorage.setItem('taskly_token', token);
             toast.success("Login successful!");
             router.push('/');
@@ -59,7 +55,6 @@ const Login = () => {
         }
     };
 
-
     return (
         <div className="flex justify-center flex-col items-center h-[100vh]">
             <div className="bg-gray-100 p-10 rounded-lg lg:w-1/3 w-auto">
@@ -67,12 +62,11 @@ const Login = () => {
                 <p className="font-medium text-2xl text-center text-black">Login</p>
                 <div className="flex items-center flex-col w-full gap-7">
                     <div className="flex flex-col gap-3 w-full ">
-
-                        <label htmlFor="email" className="text-black font-medium" >Email</label>
+                        <label htmlFor="email" className="text-black font-medium">Email</label>
                         <input
                             type="text"
                             id="email"
-                            className="p-2 focus:outline-none rounded-md border border-gray-300 rounded-lg bg-gray-300"
+                            className="p-2 focus:outline-none rounded-md border border-gray-300 bg-gray-300"
                             placeholder="you@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -81,7 +75,7 @@ const Login = () => {
                         <input
                             type="password"
                             id="password"
-                            className="p-2 bg-gray-300 focus:outline-none rounded-md border border-gray-400 rounded-lg"
+                            className="p-2 bg-gray-300 focus:outline-none rounded-md border border-gray-400"
                             placeholder="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
