@@ -30,10 +30,13 @@ export async function connectDB(): Promise<typeof mongoose> {
 
   if (!cached.promise) {
     cached.promise = mongoose.connect(MONGODB_URI, {
-      dbName: 'taskly',
+      bufferCommands: false,
+      dbName: 'taskly_mongo',
     })
   }
 
   cached.conn = await cached.promise
   return cached.conn
 }
+
+

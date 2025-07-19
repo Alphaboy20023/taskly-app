@@ -21,6 +21,7 @@ async function connectDB() {
   if (!cached.promise) {
     cached.promise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
+      dbName: 'taskly_mongo',
     });
   }
 
