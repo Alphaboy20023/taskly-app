@@ -24,7 +24,7 @@ type StoredUser = {
 };
 
 const TaskCard = ({}: Props) => {
-  const [tasks, setTasks] = useState<Task[]>([]); // TaskCard manages its own tasks state
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
@@ -34,38 +34,48 @@ const TaskCard = ({}: Props) => {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const router = useRouter();
 
-  const getToken = async () => {
-    if (!user) return null;
+  const getToken = useCallback(async () => {
+    console.log("getToken: Checking user status...", user ? "User exists" : "No user");
+    if (!user) {
+      console.log("getToken: No user found, returning null token.");
+      return null;
+    }
     if ('getIdToken' in user && typeof (user as User).getIdToken === 'function') {
       try {
-        const idToken = await (user as User).getIdToken(true);
+        const idToken = await (user as User).getIdToken(true); // true forces a refresh
+        console.log("getToken: Successfully obtained ID token. Token starts with:", idToken ? idToken.substring(0, 10) + "..." : "null");
         return idToken;
       } catch (error) {
-        console.error("Error refreshing ID token:", error);
+        console.error("getToken: Error refreshing ID token:", error);
+        // Removed direct router.push('/login') here. Let the caller handle it.
         return null;
       }
     }
+    console.log("getToken: User object does not have getIdToken function, returning null.");
     return null;
-  };
+  }, [user]); // Dependency on user
 
   const safeParseJSON = async (res: Response) => {
     const text = await res.text();
     try {
       return text ? JSON.parse(text) : null;
     } catch (e) {
-      console.error('Failed to parse JSON response:', e, 'Response text:', text);
+      console.error('safeParseJSON: Failed to parse JSON response:', e, 'Response text:', text);
       return null;
     }
   };
 
   const fetchTasks = useCallback(async () => {
+    console.log("fetchTasks: Starting fetch. isAuthReady:", isAuthReady, "User:", user ? "exists" : "null");
     try {
-      const idToken = await getToken();
+      const idToken = await getToken(); // Use the memoized getToken
 
       if (!idToken) {
+        console.log("fetchTasks: No ID token available, setting tasks to empty. NOT redirecting here.");
         setTasks([]);
-        return;
+        return; // Stop execution, but don't redirect automatically
       }
+      console.log("fetchTasks: Token obtained, fetching tasks from /api/task.");
 
       const res = await fetch('/api/task', {
         headers: {
@@ -76,67 +86,88 @@ const TaskCard = ({}: Props) => {
 
       if (!res.ok) {
         const errorBody = await safeParseJSON(res);
+        console.error("fetchTasks: API response not OK. Status:", res.status, "Error Body:", errorBody);
         if (res.status === 401) {
-          toast.error('Session expired. Please log in again.');
-          router.push('/login');
-          return;
+          console.log("fetchTasks: Received 401, but NOT redirecting here. User will be prompted on next action.");
+          toast.error('Session expired. Please log in again.'); // Keep toast for user feedback
+          setTasks([]); // Clear tasks if unauthorized
+          return; // Stop execution, but don't redirect automatically
         }
         throw new Error(errorBody?.error || `Failed to fetch tasks with status: ${res.status}`);
       }
 
       const data = await res.json();
       if (!Array.isArray(data)) {
-        console.error("API did not return an array of tasks:", data);
+        console.error("fetchTasks: API did not return an array of tasks:", data);
         setTasks([]);
         toast.error("Failed to load tasks due to unexpected data format.");
         return;
       }
+      console.log("fetchTasks: Successfully fetched tasks. Count:", data.length);
       setTasks(data);
     } catch (error) {
-      console.error('Error fetching tasks:', error);
+      console.error('fetchTasks: Error fetching tasks:', error);
       setTasks([]);
+      toast.error('Failed to load tasks.');
     }
-  }, [setTasks, router, user]);
+  }, [setTasks, user, isAuthReady, getToken]); // Removed router from dependencies as it's not used for redirection here
 
   useEffect(() => {
+    console.log("useEffect [onAuthStateChanged]: Setting up listener.");
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("onAuthStateChanged: User changed to:", firebaseUser ? firebaseUser.uid : "null");
       if (firebaseUser) {
         setUser(firebaseUser);
       } else {
         setUser(null);
+        // Removed automatic redirection here.
+        // The user will remain on the page, but will be redirected on an explicit authenticated action.
       }
-      setIsAuthReady(true);
+      setIsAuthReady(true); // Mark auth as ready after initial check
+      console.log("onAuthStateChanged: isAuthReady set to true.");
     });
-    return () => unsubscribe();
+    return () => {
+        console.log("useEffect [onAuthStateChanged]: Cleaning up listener.");
+        unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
+    console.log("useEffect [user, isAuthReady]: User or AuthReady changed. User:", user ? "exists" : "null", "isAuthReady:", isAuthReady);
     if (user && isAuthReady) {
+      console.log("useEffect [user, isAuthReady]: User exists and auth is ready, calling fetchTasks.");
       fetchTasks();
     } else if (isAuthReady) {
+      console.log("useEffect [user, isAuthReady]: No user but auth is ready, setting tasks to empty.");
       setTasks([]);
     }
   }, [user, isAuthReady, fetchTasks, setTasks]);
 
-
   useEffect(() => {
+    console.log("useEffect [tasks-updated]: Setting up custom event listener.");
     const handleUpdate = () => {
+      console.log("tasks-updated event received. Re-fetching tasks.");
       if (user && isAuthReady) {
         fetchTasks();
       }
     };
     window.addEventListener("tasks-updated", handleUpdate);
-    return () => window.removeEventListener("tasks-updated", handleUpdate);
+    return () => {
+        console.log("useEffect [tasks-updated]: Cleaning up custom event listener.");
+        window.removeEventListener("tasks-updated", handleUpdate);
+    };
   }, [fetchTasks, user, isAuthReady]);
 
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("handleAddTask: Attempting to add task.");
 
     if (!user) {
+      console.log("handleAddTask: No user found, redirecting to login.");
       toast.error('Login required. Redirecting...');
-      router.push('/login');
+      router.push('/login'); // Keep redirection here for explicit action
       return;
     }
 
@@ -153,14 +184,15 @@ const TaskCard = ({}: Props) => {
     };
 
     try {
-      const idToken = await getToken();
+      const idToken = await getToken(); 
 
       if (!idToken) {
+        console.log("handleAddTask: No ID token available after getToken call, redirecting.");
         toast.error('Authentication token missing. Please log in again.');
-        router.push('/login');
+        router.push('/login'); 
         return;
       }
-      console.log('Sending task:', taskData);
+      console.log('handleAddTask: Sending task:', taskData);
 
       const res = await fetch('/api/task', {
         method: 'POST',
@@ -174,16 +206,17 @@ const TaskCard = ({}: Props) => {
       const resBody = await safeParseJSON(res);
 
       if (!res.ok) {
+        console.error("handleAddTask: API response not OK. Status:", res.status, "Error Body:", resBody);
         if (res.status === 401) {
           toast.error('Session expired. Please log in again.');
-          router.push('/login');
+          router.push('/login') 
           return;
         }
         throw new Error(resBody?.error || 'Server error');
       }
 
       setTasks((prev) => [...prev, resBody]);
-      window.dispatchEvent(new Event('tasks-updated')); 
+      window.dispatchEvent(new Event('tasks-updated'));
       toast.success('Task created!');
       setShowModal(false);
       setNewTitle('');
@@ -192,18 +225,20 @@ const TaskCard = ({}: Props) => {
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast.error(`An error occurred: ${error.message}`);
-        console.error('Error in handleAddTask:', error.message);
+        console.error('handleAddTask: Error:', error.message);
       } else {
         toast.error('An unknown error occurred.');
-        console.error('Unknown error in handleAddTask:', error);
+        console.error('handleAddTask: Unknown error:', error);
       }
     }
   };
 
   const handleOpenModal = () => {
+    console.log("handleOpenModal: Called.");
     if (!user) {
+      console.log("handleOpenModal: No user, redirecting to login.");
       toast.error('Login required.');
-      router.push('/login');
+      router.push('/login'); // 
       return;
     }
     setShowModal(true);
@@ -211,8 +246,6 @@ const TaskCard = ({}: Props) => {
 
   return (
     <>
-   
-  
       {tasks.map((task) => (
         <div
           key={task._id}
@@ -237,8 +270,7 @@ const TaskCard = ({}: Props) => {
               Scheduled
             </span>
             <div className="flex gap-3 mt-2">
-              {/* Edit and Delete Task components will need to dispatch 'tasks-updated' event */}
-              <EditTask task={task} setTasks={setTasks} /> {/* No fetchTasks prop needed here for EditTask/DeleteTask if they dispatch event */}
+              <EditTask task={task} setTasks={setTasks} />
               <Delete taskId={task._id} setTasks={setTasks} />
             </div>
           </div>
