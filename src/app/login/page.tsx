@@ -2,19 +2,22 @@
 
 import Link from "next/link";
 import { toast } from "react-toastify";
-import { loginUser } from "app/redux/authSlice";
 import { useRouter } from 'next/navigation';
 import { useState } from "react";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from '../redux/store'
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "app/lib/firebase";
 
+interface UserInfo {
+    uid: string;
+    email: string | null;
+    name: string | null;
+    photo: string | null;
+    provider: string;
+}
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const dispatch = useDispatch<AppDispatch>();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
@@ -28,7 +31,7 @@ const Login = () => {
 
         try {
             let token: string = '';
-            let user: any;
+            let user: UserInfo;
 
             // 1. Try Firebase login
             try {
@@ -66,8 +69,10 @@ const Login = () => {
 
                 const data = await res.json();
                 token = data.token;
-                user = data.user;
-                user.provider = 'local';
+                user = {
+                    ...data.user,
+                    provider: 'local',
+                };
             }
 
             // Store token and user

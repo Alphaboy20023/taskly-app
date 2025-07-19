@@ -18,7 +18,7 @@ type Task = {
   title: string;
   description: string;
   scheduledAt: string;
-} 
+}
 
 const Home = () => {
   const [newScheduledAt, setNewScheduledAt] = useState<Date | null>(new Date());
@@ -27,13 +27,18 @@ const Home = () => {
 
   const getAuthToken = async (): Promise<string> => {
     if (!user) throw new Error("User not authenticated");
-    
+
     const authType = localStorage.getItem('taskly_auth_type');
     let token = localStorage.getItem('taskly_token') || '';
 
     if (authType === 'firebase') {
-      const isFirebaseUser = (user: any): user is FirebaseUser => {
-        return typeof user === "object" && user !== null && "getIdToken" in user;
+      const isFirebaseUser = (user: unknown): user is FirebaseUser => {
+        return (
+          typeof user === "object" &&
+          user !== null &&
+          "getIdToken" in user &&
+          typeof (user as FirebaseUser).getIdToken === "function"
+        );
       };
 
       if (isFirebaseUser(user)) {
@@ -96,7 +101,7 @@ const Home = () => {
 
   useEffect(() => {
     if (user) {
-      fetchTasks();
+     void fetchTasks();
     }
   }, [user]);
 
@@ -118,13 +123,13 @@ const Home = () => {
             <h2 className="py-8 text-xl text-black">Weekly Pinned</h2>
             <button className="text-orange-400 font-semibold">View all</button>
           </div>
-          
-          <TaskCard 
+
+          <TaskCard
             tasks={tasks}
             handleAddTask={handleAddTask}
             setTasks={setTasks}
           />
-          
+
           <div className="w-full lg:hidden mt-5">
             <SchedulePage tasks={tasks} />
           </div>

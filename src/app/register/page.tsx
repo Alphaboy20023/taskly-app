@@ -2,14 +2,13 @@
 
 import { FcGoogle } from "react-icons/fc";
 import { useDispatch, useSelector } from 'react-redux';
-// import { setUser, googleLogin } from '../redux/authSlice';
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import { toast } from "react-toastify";
 import Link from "next/link";
 import type { RootState } from '../redux/store';
 import { AppDispatch } from '../redux/store';
-import { getAuth, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { app } from '../lib/firebase';
 import { googleLogin } from "app/redux/authSlice";
 
