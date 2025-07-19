@@ -1,13 +1,14 @@
-'use client';
 import { auth, googleProvider } from '../lib/firebase';
 import { signInWithPopup } from 'firebase/auth';
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-export interface User {
-  username?: string;
-  displayName?: string;
-  name?: string;
+interface User {
+  avatar: string | Blob | undefined;
+  id: string;
   email: string;
+  username?: string;
+  name?: string;
+  authMethod: 'local' | 'google';
 }
 
 interface AuthState {
@@ -22,10 +23,10 @@ const initialState: AuthState = {
   error: null,
 };
 
-// Utilities
-const setAuthStorage = (user: User, token: string) => {
+// Auth Utilities (EXACTLY YOUR VERSION)
+const setAuthStorage = (user: User, token?: string) => {
   localStorage.setItem('taskly_user', JSON.stringify(user));
-  localStorage.setItem('taskly_token', token);
+  if (token) localStorage.setItem('taskly_token', token);
 };
 
 const clearAuthStorage = () => {
@@ -33,145 +34,143 @@ const clearAuthStorage = () => {
   localStorage.removeItem('taskly_token');
 };
 
-// Register
-export const registerUser = createAsyncThunk(
-  'auth/register',
-  async (
-    userData: { username: string; email: string; password: string },
-    thunkAPI
-  ) => {
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        return thunkAPI.rejectWithValue(data.message || 'Registration failed');
-      }
-
-      setAuthStorage(data.user, data.token);
-      return data.user;
-    } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err instanceof Error ? err.message : 'An unknown error occurred'
-      );
-    }
-  }
-);
-
-// Login
-export const loginUser = createAsyncThunk(
-  'auth/login',
-  async (
-    credentials: { email: string; password: string },
-    thunkAPI
-  ) => {
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
-
-      setAuthStorage(data.user, data.token);
-      return data.user;
-    } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err instanceof Error ? err.message : 'An unknown error occurred'
-      );
-    }
-  }
-);
-
-// Google Login
+// Google Auth (MUST SAVE TO MONGODB - NO OPTIONS)
 export const googleLogin = createAsyncThunk(
   'auth/googleLogin',
   async (_, thunkAPI) => {
     try {
+      // 1. Firebase Auth
       const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const token = await user.getIdToken();
+      const token = await result.user.getIdToken();
+      if (!result.user.email) throw new Error('No email from Google');
 
-      const payload: User = {
-        email: user.email!,
-        displayName: user.displayName!,
-        name: user.displayName!,
-      };
+      // 2. REQUIRED MongoDB Save
+      const response = await fetch('/api/auth/firebase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          email: result.user.email,
+          name: result.user.displayName // If you want to save name
+        })
+      });
 
-      setAuthStorage(payload, token);
-      return payload;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Google login failed');
+      }
+
+      // 3. Return MongoDB user
+      const { user } = await response.json();
+      setAuthStorage(user, token);
+      return user;
+
     } catch (err) {
+      await auth.signOut();
       return thunkAPI.rejectWithValue(
-        err instanceof Error ? err.message : 'An unknown error occurred'
+        err instanceof Error ? err.message : 'Google auth failed'
       );
     }
   }
 );
 
-// Slice
+// Local Login (PURE MONGODB - YOUR EXACT VERSION)
+export const loginUser = createAsyncThunk(
+  'auth/login',
+  async (credentials: { email: string; password: string }, thunkAPI) => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials)
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+         return rejectWithValue(data.error || 'Login failed');
+      }
+
+      const { user, token } = await response.json();
+      if (user.authMethod !== 'local') {
+        throw new Error(`Please login using ${user.authMethod}`);
+      }
+
+      setAuthStorage(user, token);
+      return user;
+
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err instanceof Error ? err.message : 'Login failed'
+      );
+    }
+  }
+);
+
+// Local Registration (PURE MONGODB - YOUR EXACT VERSION)
+export const registerUser = createAsyncThunk(
+  'auth/register',
+  async (userData: { username: string; email: string; password: string }, thunkAPI) => {
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+
+      if (!response.ok) throw new Error(await response.text());
+
+      const { user, token } = await response.json();
+      setAuthStorage(user, token);
+      return user;
+
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err instanceof Error ? err.message : 'Registration failed'
+      );
+    }
+  }
+);
+
+// Slice (YOUR EXACT STRUCTURE)
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setUser: (state, action: { payload: User }) => {
-      state.user = action.payload;
-    },
-    
     logout: (state) => {
       state.user = null;
       clearAuthStorage();
+      auth.signOut();
     },
+    setUser: (state, action) => {
+      state.user = action.payload;
+    }
   },
   extraReducers: (builder) => {
-    // Login
-    builder.addCase(loginUser.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(loginUser.fulfilled, (state, action) => {
-      state.loading = false;
-      state.user = action.payload;
-    });
-    builder.addCase(loginUser.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    });
+    const handleAuth = (action: any) => {
+      builder
+        .addCase(action.pending, (state) => {
+          state.loading = true;
+          state.error = null;
+        })
+        .addCase(action.fulfilled, (state, { payload }) => {
+          state.loading = false;
+          state.user = payload;
+        })
+        .addCase(action.rejected, (state, { payload }) => {
+          state.loading = false;
+          state.error = payload as string;
+        });
+    };
 
-    // Register
-    builder.addCase(registerUser.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(registerUser.fulfilled, (state, action) => {
-      state.loading = false;
-      state.user = action.payload;
-    });
-    builder.addCase(registerUser.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    });
-
-    // Google Login
-    builder.addCase(googleLogin.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(googleLogin.fulfilled, (state, action) => {
-      state.loading = false;
-      state.user = action.payload;
-    });
-    builder.addCase(googleLogin.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    });
-  },
+    handleAuth(googleLogin);
+    handleAuth(loginUser);
+    handleAuth(registerUser);
+  }
 });
 
 export const { logout, setUser } = authSlice.actions;
 export default authSlice.reducer;
+
+function rejectWithValue(arg0: any): any {
+  throw new Error('Function not implemented.');
+}

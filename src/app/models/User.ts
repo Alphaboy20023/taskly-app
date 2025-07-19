@@ -1,10 +1,16 @@
-// src/models/User.ts
-import { Schema, model, models } from 'mongoose'
+import mongoose from 'mongoose';
 
-const userSchema = new Schema({
+const userSchema = new mongoose.Schema({
+  // Common fields
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  username: {type: String, required: true}
-}, { timestamps: true })
+  authMethod: { type: String, enum: ['local', 'firebase'], required: true },
+  
+  // Local auth only
+  username: { type: String, unique: true, sparse: true },
+  passwordHash: { type: String, select: false },
+  
+  // Firebase auth only
+  firebaseUID: { type: String, unique: true, sparse: true }
+}, { timestamps: true });
 
-export const User = models.User || model('User', userSchema)
+export const User = mongoose.models.User || mongoose.model('User', userSchema);

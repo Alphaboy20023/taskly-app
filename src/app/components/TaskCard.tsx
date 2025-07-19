@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import Delete from './DeleteTask';
-import TaskCardCalendar from './TaskCardCalendar';
 import EditTask from './EditTask';
-import { useRouter } from 'next/navigation';
-
+import TaskCardCalendar from './TaskCardCalendar';
+import { useUser } from '../context/UserProvider';
+import Delete from './DeleteTask';
 
 type Task = {
   _id: string;
@@ -15,18 +14,16 @@ type Task = {
   scheduledAt: string;
 };
 
-type Props = {
-  isAuthenticated: boolean;
-} 
+type Props = {}
 
-const TaskCard = ({isAuthenticated}: Props) => {
+const TaskCard = ({ }: Props) => {
+  const { user } = useUser(); // ✅ Added
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newScheduledAt, setNewScheduledAt] = useState<string>('');
   const [showCalendar, setShowCalendar] = useState(false);
-  const router = useRouter();
 
   const safeParseJSON = async (res: Response) => {
     const text = await res.text();
@@ -39,10 +36,8 @@ const TaskCard = ({isAuthenticated}: Props) => {
   };
 
   const fetchTasks = useCallback(async () => {
-    if (!isAuthenticated) {
-      toast.error('You are not authorized to perform this action')
-      return;
-    }
+    if (!user) return;
+    console.log("fetchTasks: Fetching tasks without authentication.");
 
     try {
       const res = await fetch('/api/task', {
@@ -67,37 +62,30 @@ const TaskCard = ({isAuthenticated}: Props) => {
     } catch (error) {
       console.error('fetchTasks: Error fetching tasks:', error);
       setTasks([]);
-      toast.error('Failed to load tasks.');
+      console.error('Failed to load tasks.');
     }
-  }, [setTasks]); 
+  }, [setTasks, user]);
 
   useEffect(() => {
-    console.log("useEffect: Calling fetchTasks on component mount/update.");
+    console.log("useEffect: Calling fetchTasks on component mount.");
     fetchTasks();
-  }, [fetchTasks]); 
+  }, [fetchTasks]);
 
   useEffect(() => {
     console.log("useEffect [tasks-updated]: Setting up custom event listener.");
     const handleUpdate = () => {
       console.log("tasks-updated event received. Re-fetching tasks.");
-      fetchTasks(); // 
+      fetchTasks();
     };
     window.addEventListener("tasks-updated", handleUpdate);
     return () => {
-        console.log("useEffect [tasks-updated]: Cleaning up custom event listener.");
-        window.removeEventListener("tasks-updated", handleUpdate);
+      console.log("useEffect [tasks-updated]: Cleaning up custom event listener.");
+      window.removeEventListener("tasks-updated", handleUpdate);
     };
-  }, [fetchTasks]); 
-
+  }, [fetchTasks]);
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!isAuthenticated) {
-      toast.error('You are not Authenticated to perform this action')
-      router.push('/login')
-      return;
-    }
 
     const scheduledTime = new Date(newScheduledAt);
     if (scheduledTime < new Date()) {
@@ -112,16 +100,17 @@ const TaskCard = ({isAuthenticated}: Props) => {
     };
 
     try {
-      console.log('handleAddTask: Sending task:', taskData);
-
+      // console.log('handleAddTask: Sending task:', taskData);
+      const token = localStorage.getItem('taskly_token')
       const res = await fetch('/api/task', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(taskData),
       });
-
+      // console.log('Token:', token)
       const resBody = await safeParseJSON(res);
 
       if (!res.ok) {
@@ -148,15 +137,9 @@ const TaskCard = ({isAuthenticated}: Props) => {
   };
 
   const handleOpenModal = () => {
-    if (!isAuthenticated) {
-      toast.error('You are not Authenticated to perform this action')
-      return;
-    }
-    console.log("handleOpenModal: Called (no authentication).");
+    console.log("handleOpenModal: Called.");
     setShowModal(true);
   };
-
-  
 
   return (
     <>
@@ -170,13 +153,13 @@ const TaskCard = ({isAuthenticated}: Props) => {
             <p className="text-md text-black mb-1">
               {task.scheduledAt
                 ? new Date(task.scheduledAt).toLocaleString('en-US', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true,
-                  })
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true,
+                })
                 : 'No scheduled date'}
             </p>
             <p className="text-sm text-gray-700 mb-2">{task.description}</p>
@@ -199,7 +182,7 @@ const TaskCard = ({isAuthenticated}: Props) => {
         <p className="px-4 text-white text-xl font-medium bg-orange-400 rounded-lg">+</p>
       </div>
 
-      {showModal && ( // Removed 'user &&' condition here
+      {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md relative shadow-lg">
             <button
@@ -251,9 +234,9 @@ const TaskCard = ({isAuthenticated}: Props) => {
                       value={
                         newScheduledAt
                           ? new Date(newScheduledAt).toLocaleTimeString('en-GB', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
                           : ''
                       }
                       onChange={(e) => {

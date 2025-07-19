@@ -23,22 +23,38 @@ const Login = () => {
         }
 
         setLoading(true);
-        const resultAction = await dispatch(loginUser({ email, password }));
-        setLoading(false);
 
         try {
-            unwrapResult(resultAction);
+            const resultAction = await dispatch(loginUser({ email, password }));
+            const userCredential = unwrapResult(resultAction);
+
+            // Get Firebase token from the logged-in user
+            const token = await userCredential.user.getIdToken();
+
+            // sync with backend
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ email })
+            });
+
+            if (!res.ok) throw new Error(await res.text());
+
+            // Save token locally
+            localStorage.setItem('taskly_token', token);
             toast.success("Login successful!");
             router.push('/');
-        } catch (err) {
-            if (err instanceof Error) {
-                toast.error(err.message || "Login failed");
-            } else {
-                toast.error("Login failed");
-            }
-        }
 
+        } catch (err: any) {
+            toast.error(err.message || "Login failed");
+        } finally {
+            setLoading(false);
+        }
     };
+
 
     return (
         <div className="flex justify-center flex-col items-center h-[100vh]">
@@ -48,7 +64,7 @@ const Login = () => {
                 <div className="flex items-center flex-col w-full gap-7">
                     <div className="flex flex-col gap-3 w-full ">
 
-                        <label htmlFor="email"className="text-black font-medium" >Email</label>
+                        <label htmlFor="email" className="text-black font-medium" >Email</label>
                         <input
                             type="text"
                             id="email"

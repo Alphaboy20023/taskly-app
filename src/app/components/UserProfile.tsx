@@ -1,115 +1,86 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { FaUserCircle } from 'react-icons/fa';
-import { logout, setUser } from '../redux/authSlice';
-import { useRouter } from 'next/navigation';
-import type { RootState } from '../redux/store';
-import { signOut } from 'firebase/auth';
-import { auth } from '../lib/firebase';
-import Link from 'next/link';
+import { FaUserCircle } from 'react-icons/fa'
+import { signOut } from 'firebase/auth'
+import { auth } from '../lib/firebase'
+import Link from 'next/link'
+import { useState, useMemo } from 'react'
+import { useUser } from '../context/UserProvider'
 
-const UserProfile = () => {
-  const dispatch = useDispatch();
-  const router = useRouter();
-  const { user } = useSelector((state: RootState) => state.auth);
+export default function UserProfile() {
+  const [showModal, setShowModal] = useState(false)
 
-  const [showSettings, setShowSettings] = useState(false);
-
-  useEffect(() => {
-    // Restore user from localStorage on reload
-    const storedUser = localStorage.getItem('taskly_user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        if (!user) dispatch(setUser(parsedUser));
-      } catch (err) {
-        console.error('Failed to parse user from storage', err);
-      }
-    }
-  }, [dispatch, user]);
+  
+  const { user, setUser } = useUser()
 
   const handleLogout = async () => {
-    dispatch(logout());
-    localStorage.removeItem('taskly_token');
-    localStorage.removeItem('taskly_user');
-    localStorage.removeItem('token');
-    sessionStorage.clear();
+    localStorage.removeItem('taskly_token')
+    localStorage.removeItem('taskly_user')
+    if (user?.authMethod && user.authMethod !== 'local') await signOut(auth)
+    setUser(null)
+    window.location.href = '/login'
+  }
 
-    try {
-      await signOut(auth);
-    } catch (err) {
-      console.error('Firebase logout error:', err);
-    }
-
-    router.push('/login');
-  };
+  const avatarUrl = useMemo(() => {
+    if (!user?.avatar) return null
+    return typeof user.avatar === 'string' ? user.avatar : URL.createObjectURL(user.avatar)
+  }, [user?.avatar])
 
   return (
-    <>
-      <div className="flex items-center shadow shadow-lg justify-between p-5 rounded-lg  pt-7">
-        <div className='flex flex-col gap-4'>
-          <p className="font-semibold text-xl text-black">
-            Hello, {user?.username || user?.displayName || user?.email || 'Welcome'}
-          </p>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="font-semibole text-orange-500 text-xl cursor-pointer border border-orange-400 px-1 p-1 rounded-lg"
-          >
-            My settings
-          </button>
-        </div>
-        <FaUserCircle className="text-3xl text-gray-300" />
+    <div className="flex items-center gap-4 p-4 bg-white rounded-lg shadow">
+      <div>
+        <p className="font-bold"> Hello, {user?.username || user?.displayName || user?.name || 'Guest User'}</p>
+        <button
+          onClick={() => setShowModal(true)}
+          className="text-lg text-orange-500 hover:underline"
+        >
+          My Account
+        </button>
       </div>
 
-      {showSettings && (
-        <SettingsModal onClose={() => setShowSettings(false)} handleLogout={handleLogout} />
+      {avatarUrl ? (
+        <img src={avatarUrl} className="w-10 h-10 rounded-full" alt="Profile" />
+      ) : (
+        <FaUserCircle className="text-3xl text-gray-300" />
       )}
-    </>
-  );
-};
 
-type SettingsModalProps = {
-  onClose: () => void;
-  handleLogout: () => void;
-};
-
-const SettingsModal = ({ onClose, handleLogout }: SettingsModalProps) => {
-  const { user } = useSelector((state: RootState) => state.auth);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
-      <div className="bg-white rounded-2xl shadow-lg p-6 w-[95%] max-w-md relative">
-        <h2 className="text-xl font-semibold mb-4">My Settings</h2>
-
-        <div className="space-y-4">
-          <p className="font-medium text-xl">
-            Hello, {user?.username || user?.name || user?.email || 'Welcome'}
-          </p>
-
-          {/* <p className="font-medium text-xl">Change password</p> */}
-
-          <div className="block">
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm bg-opacity-40 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-xl p-6 w-[90%] max-w-sm shadow-lg space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-black">My Account</h3>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-black text-xl">&times;</button>
+            </div>
+            <div className="flex flex-col items-center">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="w-16 h-16 rounded-full mb-2" />
+              ) : (
+                <FaUserCircle className="text-5xl text-gray-300 mb-2" />
+              )}
+              <p className="font-medium text-black">{user?.name || user?.email || 'Guest User'}</p>
+              {user?.authMethod === 'local' && (
+                <Link href="/change-password" className="text-blue-500 hover:underline mt-2 text-sm">
+                  Change Password
+                </Link>
+              )}
+            </div>
             {user ? (
-              <>
-                <button onClick={handleLogout} className="text-red-600 font-semibold cursor-pointer border border-red px-3 p-1 rounded-lg">Logout</button>
-              </>
+              <button
+                onClick={handleLogout}
+                className="w-full py-2 text-white bg-red-500 rounded-md hover:bg-red-600 transition"
+              >
+                Logout
+              </button>
             ) : (
-              <Link href="/login" className='text-red-600 font-semibold text-xl border border-red px-3 p-1 rounded-lg cursor-pointer'>Login</Link>
+              <Link href="/login">
+                <div className="w-full py-2 text-center text-white bg-blue-500 rounded-md hover:bg-blue-600 transition">
+                  Login
+                </div>
+              </Link>
             )}
           </div>
         </div>
-
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-gray-500 hover:text-black text-xl cursor-pointer"
-        >
-          ✕
-        </button>
-      </div>
+      )}
     </div>
-  );
-};
-
-export default UserProfile;
+  )
+}

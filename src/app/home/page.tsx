@@ -9,6 +9,8 @@ import Weather from "../components/Weather"
 import { useState } from "react"
 import Image from "next/image"
 import NotificationBanner from "app/components/NotificationBanner"
+import { RootState } from "app/redux/store"
+import { useSelector } from "react-redux"
 
 
 type Task = {
@@ -16,7 +18,7 @@ type Task = {
   title: string;
   description: string;
   scheduledAt: string;
-};
+} 
 
 const Home = () => {
 
@@ -28,7 +30,7 @@ const Home = () => {
     <>
       <div className="flex lg:flex-nowrap flex-wrap">
         <div className="lg:hidden w-full shadow shadow-lg bg-gray-300">
-          <UserProfile />
+          <UserProfile  />
         </div>
         <div className="flex flex-col p-6 bg-[#F6F7FB] lg:w-1/2 w-full">
           <div className="flex space-x-3">

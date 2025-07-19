@@ -83,7 +83,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) { // This is the key function for POST requests
+// POST
+export async function POST(req: NextRequest) { 
   try {
     await connectDB(); 
     const userId = await verifyToken(req); 
