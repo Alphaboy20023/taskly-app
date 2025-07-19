@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from "app/lib/db";
 import { User } from 'app/models/User';
 import bcrypt from 'bcryptjs';
+import { MongoServerError } from 'mongodb';
 
 export async function POST(req: Request) {
   await connectDB();
@@ -38,14 +39,20 @@ export async function POST(req: Request) {
         displayName: user.username
       }
     });
-  } catch (err: any) {
-    if (err.code === 11000) {
-      const duplicatedField = Object.keys(err.keyPattern)[0];
+  } catch (err) {
+    if (err instanceof MongoServerError && err.code === 11000) {
+      const duplicatedField = Object.keys(err.keyPattern || {})[0];
       return NextResponse.json(
-        { error: `${duplicatedField.charAt(0).toUpperCase() + duplicatedField.slice(1)} already exists` },
+        {
+          error:
+            duplicatedField
+              ? `${duplicatedField.charAt(0).toUpperCase() + duplicatedField.slice(1)} already exists`
+              : 'Duplicate field error',
+        },
         { status: 400 }
       );
     }
+
 
     console.error("Registration error:", err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

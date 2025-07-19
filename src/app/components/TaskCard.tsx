@@ -14,7 +14,7 @@ type Task = {
   scheduledAt: string;
 };
 
-type Props = {}
+type Props = Record<string, never>;
 
 const TaskCard = ({ }: Props) => {
   const { user } = useUser(); // ✅ Added
