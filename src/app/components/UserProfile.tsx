@@ -10,7 +10,7 @@ import { useUser } from '../context/UserProvider'
 export default function UserProfile() {
   const [showModal, setShowModal] = useState(false)
 
-  
+
   const { user, setUser } = useUser()
 
   const handleLogout = async () => {
@@ -27,7 +27,7 @@ export default function UserProfile() {
   }, [user?.avatar])
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-white rounded-lg shadow">
+    <div className="flex items-center justify-between gap-4 p-4 bg-white rounded-lg shadow">
       <div>
         <p className="font-bold"> Hello, {user?.username || user?.displayName || user?.name || 'Guest User'}</p>
         <button
@@ -37,12 +37,14 @@ export default function UserProfile() {
           My Account
         </button>
       </div>
+      <div>
 
-      {avatarUrl ? (
-        <img src={avatarUrl} className="w-10 h-10 rounded-full" alt="Profile" />
-      ) : (
-        <FaUserCircle className="text-3xl text-gray-300" />
-      )}
+        {avatarUrl ? (
+          <img src={avatarUrl} className="w-10 h-10 rounded-full" alt="Profile" />
+        ) : (
+          <FaUserCircle className="text-3xl text-gray-300" />
+        )}
+      </div>
 
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm bg-opacity-40 z-50 flex items-center justify-center">
