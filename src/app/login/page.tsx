@@ -7,7 +7,9 @@ import { useRouter } from 'next/navigation';
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from '../redux/store'
-import { unwrapResult } from "@reduxjs/toolkit";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "app/lib/firebase";
+
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -25,9 +27,9 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const resultAction = await dispatch(loginUser({ email, password }));
-            const userCredential = unwrapResult(resultAction); 
-            const token = await userCredential.user.getIdToken(); 
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const token = await userCredential.user.getIdToken();
+
 
             const res = await fetch('/api/auth/login', {
                 method: 'POST',

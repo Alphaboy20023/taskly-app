@@ -6,7 +6,6 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 
 // ---------- Types ----------
 interface User {
-  [x: string]: any;
   avatar?: string;
   id: string;
   email: string;
