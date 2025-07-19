@@ -94,18 +94,16 @@ const Home = () => {
             errorMsg = error.message || errorMsg;
           }
         } catch (_) {
-          
+
         }
 
         throw new Error(errorMsg);
       }
 
-      console.log('Error status:', res.status);
-      console.log('Error content-type:', res.headers.get('Content-Type'));
-      console.log('Error body text:', await res.text());
-
-
       const newTask = await res.json();
+
+      console.log('Task created successfully:', newTask);
+      toast.success('Task Created Successfully')
       setTasks(prev => [...prev, newTask]);
       return newTask;
     } catch (error) {

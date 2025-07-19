@@ -102,7 +102,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-
 // --- DELETE Task ---
 export async function DELETE(req: NextRequest) {
   try {
@@ -130,12 +129,11 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-
 // --- PUT Update Task ---
 export async function PUT(req: NextRequest) {
   try {
     await connectDB();
-    const user = await verifyToken(req);  // just verify token, no userId extraction assumed
+    const user = await verifyToken(req);
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     const { title, description, scheduledAt } = await req.json();
@@ -165,5 +163,3 @@ export async function PUT(req: NextRequest) {
     });
   }
 }
-
-
