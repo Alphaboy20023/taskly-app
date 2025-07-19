@@ -59,9 +59,12 @@ const SignUp = () => {
             localStorage.setItem('taskly_token', token);
             router.push('/login');
 
-        } catch (error: any) {
-            setError(error.message);
-            toast.error(error.message);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                toast.error(err.message || "Login failed");
+            } else {
+                toast.error("Login failed");
+            }
         } finally {
             setLoading(false);
         }

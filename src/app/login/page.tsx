@@ -48,8 +48,12 @@ const Login = () => {
             toast.success("Login successful!");
             router.push('/');
 
-        } catch (err: any) {
-            toast.error(err.message || "Login failed");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                toast.error(err.message || "Login failed");
+            } else {
+                toast.error("Login failed");
+            }
         } finally {
             setLoading(false);
         }
